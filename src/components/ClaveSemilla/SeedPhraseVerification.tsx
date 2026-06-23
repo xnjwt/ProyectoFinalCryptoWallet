@@ -1,29 +1,15 @@
 import { Box, Typography, Button, Chip, Paper, Alert } from '@mui/material';
-import { useSeedVerification } from '../../hooks/useSeedVerification';
+import { useWalletStore } from '../../store/walletStore';
 
-interface Props {
-  originalSeed: string;
-  onSuccess: () => void;
-  onBack: () => void;
-}
-
-export const SeedPhraseVerification = ({ originalSeed, onSuccess, onBack }: Props) => {
-  const {
-    availableWords,
-    selectedWords,
-    validationResult,
-    selectWord,
-    deselectWord,
-    resetVerification,
-    verify,
-  } = useSeedVerification(originalSeed);
-
-  const handleVerify = () => {
-    const isValid = verify();
-    if (isValid) {
-      setTimeout(onSuccess, 1500);
-    }
-  };
+export const SeedPhraseVerification = () => {
+  const availableWords = useWalletStore((state) => state.availableWords);
+  const selectedWords = useWalletStore((state) => state.selectedWords);
+  const validationResult = useWalletStore((state) => state.validationResult);
+  
+  const selectWord = useWalletStore((state) => state.selectWord);
+  const deselectWord = useWalletStore((state) => state.deselectWord);
+  const setStep = useWalletStore((state) => state.setStep);
+  const verifySeed = useWalletStore((state) => state.verifySeed);
 
   return (
     <Paper elevation={0} sx={{ p: 4, maxWidth: 600, mx: 'auto', mt: 8 }}>
@@ -75,12 +61,12 @@ export const SeedPhraseVerification = ({ originalSeed, onSuccess, onBack }: Prop
       )}
 
       <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button variant="outlined" color="secondary" onClick={onBack} fullWidth>
+        <Button variant="outlined" color="secondary" onClick={() => setStep(1)} fullWidth>
           Volver a anotar
         </Button>
         <Button
           variant="contained"
-          onClick={handleVerify}
+          onClick={() => verifySeed(() => {})}
           fullWidth
           disabled={selectedWords.length !== 12 || validationResult === true}
         >

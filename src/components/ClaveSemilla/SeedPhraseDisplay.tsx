@@ -1,24 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Box, Typography, Button, Chip, Paper } from '@mui/material';
+import { useWalletStore } from '../../store/walletStore';
 
-interface Props {
-  seedPhrase: string;
-  onNext: () => void;
-}
+export const SeedPhraseDisplay = () => {
+  const seed = useWalletStore((state) => state.seed);
+  const secondsLeft = useWalletStore((state) => state.secondsLeft);
+  const decrementTimer = useWalletStore((state) => state.decrementTimer);
+  const setStep = useWalletStore((state) => state.setStep);
+  const resetVerification = useWalletStore((state) => state.resetVerification);
 
-export const SeedPhraseDisplay = ({ seedPhrase, onNext }: Props) => {
-  const [secondsLeft, setSecondsLeft] = useState(5);
-  const words = seedPhrase.split(' ');
+  const words = seed.split(' ');
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      setSecondsLeft((prev) => prev - 1);
-    }, 1000);
-
+    const timer = setInterval(decrementTimer, 1000);
     return () => clearInterval(timer);
-  }, [secondsLeft]);
+  }, [secondsLeft, decrementTimer]);
+
+  const handleNext = () => {
+    resetVerification(); // Prepara las palabras mezcladas antes de cambiar de vista
+    setStep(2);
+  };
 
   return (
     <Paper elevation={0} sx={{ p: 4, maxWidth: 600, mx: 'auto', mt: 8 }}>
@@ -46,7 +48,7 @@ export const SeedPhraseDisplay = ({ seedPhrase, onNext }: Props) => {
           variant="contained"
           size="large"
           disabled={secondsLeft > 0}
-          onClick={onNext}
+          onClick={handleNext}
           sx={{ width: '100%', py: 1.5, fontWeight: 'bold' }}
         >
           {secondsLeft > 0 ? `Espera ${secondsLeft} segundos...` : 'Siguiente'}
