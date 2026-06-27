@@ -1,70 +1,45 @@
 /* eslint-disable */
 const express = require("express");
 const cors = require("cors");
-
-// Importaciones de Firebase
+// La forma correcta para v14.x
 const { initializeApp, cert } = require("firebase-admin/app");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getFirestore } = require("firebase-admin/firestore");
+
 const serviceAccount = require("./firebase-service-account.json");
 
-// Inicialización de la base de datos
 initializeApp({
   credential: cert(serviceAccount),
 });
-const db = getFirestore();
 
+const db = getFirestore();
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Endpoint básico de estado
-app.get("/", (req, res) => {
-  res.json({ mensaje: "Servidor backend de la Wallet activo" });
-});
-
-// --- Endpoint Oficial: Vincular Wallet al Usuario ---
+// RUTA PARA GUARDAR LA WALLET
 app.post("/api/users/link-wallet", async (req, res) => {
-  // 1. Recepción de datos del frontend
-  const { uid, email, publicKey } = req.body;
-
-  // 2. Validación de seguridad
-  if (!uid || !publicKey) {
-    return res.status(400).json({
-      exito: false,
-      error:
-        "Faltan datos obligatorios: Se requiere el UID de Firebase y la Clave Pública de Solana.",
-    });
-  }
-
   try {
-    // 3. Escritura en la base de datos (Usando el UID como nombre del documento)
+    const { uid, email, publicKey } = req.body;
     await db
       .collection("USERS")
       .doc(uid)
-      .set(
-        {
-          email: email || "Sin correo",
-          publicKey: publicKey,
-          fechaRegistro: FieldValue.serverTimestamp(),
-          estado: "activo",
-        },
-        { merge: true },
-      );
-
-    // 4. Respuesta de éxito al frontend
-    res.json({
-      exito: true,
-      mensaje: "Wallet vinculada correctamente al perfil del usuario.",
-    });
+      .set({ email, publicKey, createdAt: new Date() });
+    res.json({ exito: true });
   } catch (error) {
-    // 5. Manejo de errores
-    console.error("Error al vincular la wallet:", error);
-    res.status(500).json({ exito: false, error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Encendido del servidor
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+// RUTA PARA OBTENER LA WALLET
+app.get("/api/users/:uid", async (req, res) => {
+  try {
+    const doc = await db.collection("USERS").doc(req.params.uid).get();
+    if (!doc.exists) return res.status(404).json({ error: "No encontrado" });
+    res.json(doc.data());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
+
+app.listen(3000, () => console.log("Servidor en http://localhost:3000"));
