@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ThemeProvider, CssBaseline, Box, Button, Typography} from '@mui/material';
+import { ThemeProvider, CssBaseline, Box, Button, Typography } from '@mui/material';
 import { techTheme } from './theme';
 import { SeedPhraseDisplay } from './components/ClaveSemilla/SeedPhraseDisplay';
 import { SeedPhraseVerification } from './components/ClaveSemilla/SeedPhraseVerification';
@@ -14,6 +14,18 @@ export default function App() {
     initializeWallet();
   }, [initializeWallet]);
 
+  // Nuevo efecto: Redirección automática al detectar el paso 3 (éxito)
+  useEffect(() => {
+    if (step === 3) {
+      const timer = setTimeout(() => {
+        // Redirigimos al Dashboard para que el flujo sea fluido
+        window.location.href = '/dashboard'; 
+      }, 2000); // Esperamos 2 segundos para que el usuario lea el mensaje de éxito
+      
+      return () => clearTimeout(timer); // Limpieza del temporizador
+    }
+  }, [step]);
+
   if (step === 0) return null;
 
   return (
@@ -27,12 +39,20 @@ export default function App() {
           px: 2,
         }}
       >
+        {/* Paso 1: Muestra la frase semilla */}
         {step === 1 && <SeedPhraseDisplay />}
+        
+        {/* Paso 2: Verifica la frase semilla */}
         {step === 2 && <SeedPhraseVerification />}
+        
+        {/* Paso 3: Pantalla de confirmación y redirección */}
         {step === 3 && (
           <Box sx={{ textAlign: 'center', mt: 10 }}>
             <Typography variant="h5" color="primary" sx={{ mb: 4, fontWeight: 'bold' }}>
               ¡Wallet configurada exitosamente!
+            </Typography>
+            <Typography variant="body2" color="gray" sx={{ mb: 2 }}>
+              Redirigiendo a tu panel...
             </Typography>
             <Button
               variant="outlined"

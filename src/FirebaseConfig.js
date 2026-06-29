@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
+//La configuración que obtuviste de la consola de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDx_opJK3OYN1asfNUr_A3JuvJ717ZDXb0",
   authDomain: "walletcrypto123-a7233.firebaseapp.com",
@@ -16,4 +16,5 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+// 3. Obtener la instancia de Auth (ESTO ES LO MÁS IMPORTANTE)
 export const auth = getAuth(app);
