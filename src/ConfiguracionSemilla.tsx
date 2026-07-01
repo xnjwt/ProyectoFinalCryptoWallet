@@ -5,26 +5,29 @@ import { SeedPhraseDisplay } from './components/ClaveSemilla/SeedPhraseDisplay';
 import { SeedPhraseVerification } from './components/ClaveSemilla/SeedPhraseVerification';
 import { useWalletStore } from './store/walletStore';
 
-export default function App() {
+// 1. Cambiamos el nombre de la función para que coincida con el archivo
+export default function ConfiguracionSemilla() {
   const step = useWalletStore((state) => state.step);
   const initializeWallet = useWalletStore((state) => state.initializeWallet);
   const resetWallet = useWalletStore((state) => state.resetWallet);
+  
+  // 2. Extraemos la función que actualiza el estado para el Orquestador
+  const completeWalletSetup = useWalletStore((state) => state.completeWalletSetup);
 
   useEffect(() => {
     initializeWallet();
   }, [initializeWallet]);
 
-  // Nuevo efecto: Redirección automática al detectar el paso 3 (éxito)
   useEffect(() => {
     if (step === 3) {
       const timer = setTimeout(() => {
-        // Redirigimos al Dashboard para que el flujo sea fluido
-        window.location.href = '/dashboard'; 
-      }, 2000); // Esperamos 2 segundos para que el usuario lea el mensaje de éxito
+        // 3. Reemplazamos la redirección HTTP por la actualización de estado en memoria
+        completeWalletSetup(); 
+      }, 2000); 
       
-      return () => clearTimeout(timer); // Limpieza del temporizador
+      return () => clearTimeout(timer);
     }
-  }, [step]);
+  }, [step, completeWalletSetup]); // 4. Agregamos completeWalletSetup a las dependencias
 
   if (step === 0) return null;
 
