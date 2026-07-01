@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Box, Typography, Button, Chip, Paper } from '@mui/material';
 import { useWalletStore } from '../../store/walletStore';
 
 export const SeedPhraseDisplay = () => {
@@ -9,7 +8,8 @@ export const SeedPhraseDisplay = () => {
   const setStep = useWalletStore((state) => state.setStep);
   const resetVerification = useWalletStore((state) => state.resetVerification);
 
-  const words = seed.split(' ');
+  // Si por alguna razón la semilla está vacía, mostramos un placeholder para no romper la UI
+  const words = seed ? seed.split(' ') : Array(12).fill('...');
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -23,37 +23,43 @@ export const SeedPhraseDisplay = () => {
   };
 
   return (
-    <Paper elevation={0} sx={{ p: 4, maxWidth: 600, mx: 'auto', mt: 8 }}>
-      <Typography variant="h5" color="primary" gutterBottom align="center" fontWeight="bold">
-        Tu Frase Semilla
-      </Typography>
-      <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 4 }}>
-        Anota estas 12 palabras en orden. Las necesitarás en el siguiente paso.
-      </Typography>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-4 font-sans">
+      <div className="bg-[#0b1320] border border-cyan-900/30 rounded-2xl p-8 md:p-12 max-w-3xl w-full shadow-2xl">
+        
+        <h2 className="text-3xl font-semibold text-cyan-400 text-center mb-3">
+          Tu Frase Semilla
+        </h2>
+        
+        <p className="text-gray-200 text-center mb-10 text-sm md:text-base font-medium">
+          Anota estas 12 palabras en orden. Las necesitarás en el siguiente paso.
+        </p>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center', mb: 4 }}>
-        {words.map((word, index) => (
-          <Chip
-            key={`${word}-${index}`}
-            label={`${index + 1}. ${word}`}
-            color="primary"
-            variant="outlined"
-            sx={{ px: 1, py: 2.5, fontSize: '1rem' }}
-          />
-        ))}
-      </Box>
+        {/* Cuadrícula de palabras imitando el diseño original */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          {words.map((word, index) => (
+            <div
+              key={`${word}-${index}`}
+              className="border-2 border-cyan-600 rounded-lg py-3 px-2 flex items-center justify-center text-cyan-400 font-bold bg-transparent shadow-[0_0_10px_rgba(8,145,178,0.15)]"
+            >
+              <span className="text-cyan-200 mr-2">{index + 1}.</span> {word}
+            </div>
+          ))}
+        </div>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant="contained"
-          size="large"
-          disabled={secondsLeft > 0}
+        {/* Botón con efecto Neón */}
+        <button
           onClick={handleNext}
-          sx={{ width: '100%', py: 1.5, fontWeight: 'bold' }}
+          disabled={secondsLeft > 0}
+          className={`w-full py-4 rounded-xl font-bold text-lg tracking-widest transition-all duration-300 ${
+            secondsLeft > 0
+              ? 'bg-cyan-900/50 text-cyan-700 cursor-not-allowed border border-cyan-900'
+              : 'bg-cyan-400 text-slate-900 hover:bg-cyan-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-[1.01]'
+          }`}
         >
-          {secondsLeft > 0 ? `Espera ${secondsLeft} segundos...` : 'Siguiente'}
-        </Button>
-      </Box>
-    </Paper>
+          {secondsLeft > 0 ? `ESPERA ${secondsLeft}s...` : 'SIGUIENTE'}
+        </button>
+        
+      </div>
+    </div>
   );
 };

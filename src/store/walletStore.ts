@@ -8,7 +8,7 @@ import {
   clearSeedFromStorage
 } from '../services/walletService';
 
-// 1. Añadimos las firmas faltantes a la interfaz
+//Añadimos las firmas faltantes a la interfaz
 interface WalletState {
   seed: string;
   step: number;
@@ -21,6 +21,7 @@ interface WalletState {
   // Acciones 
   initializeWallet: () => void;
   setStep: (step: number) => void;
+  setSeed: (seed: string) => void;
   decrementTimer: () => void;
   selectWord: (word: string) => void;
   deselectWord: (word: string) => void;
@@ -43,13 +44,20 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   initializeWallet: () => {
     const existingSeed = getSeedFromStorage();
     if (existingSeed) {
-      // --- NUEVO: Si ya existe en local, le decimos al orquestador que está lista ---
       set({ seed: existingSeed, step: 3, isWalletConfigured: true });
     } else {
       const newSeed = generateSeedPhrase();
       set({ seed: newSeed, step: 1, isWalletConfigured: false });
     }
   },
+
+  // --Función para inyectar la semilla desde el formulario y forzar el inicio ---
+  setSeed: (seed) => set({ 
+    seed, 
+    step: 1, 
+    isWalletConfigured: false, 
+    secondsLeft: 5 
+  }),
 
   setStep: (step) => set({ step }),
 
@@ -82,9 +90,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     set({ validationResult: isValid });
 
     if (isValid) {
-      saveSeedToStorage(seed);
+      saveSeedToStorage(seed); 
       setTimeout(() => {
-        set({ step: 3 });
+        set({ step: 3, isWalletConfigured: true }); 
         onSuccess();
       }, 1500);
     } else {
@@ -105,23 +113,16 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       selectedWords: [],
       validationResult: null,
       secondsLeft: 5,
-      // --- NUEVO: Si reseteamos la wallet, también cambiamos el estado del orquestador ---
       isWalletConfigured: false 
     });
   },
 
-  // --- NUEVO: Implementación de las funciones del orquestador ---
   completeWalletSetup: () => {
     set({ isWalletConfigured: true });
   },
 
   checkWalletStatus: async (uid: string) => {
     try {
-      // const response = await fetch(`http://localhost:3000/api/wallet-status/${uid}`);
-      // const data = await response.json();
-      // set({ isWalletConfigured: data.isConfigured, step: data.isConfigured ? 3 : 1 });
-
-      // POR AHORA:Evaluamos usando tu almacenamiento local para que puedas seguir programando el frontend
       const existingSeed = getSeedFromStorage();
       if (existingSeed) {
         set({ isWalletConfigured: true, step: 3 });

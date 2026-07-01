@@ -20,13 +20,18 @@ app.use(express.json());
 // RUTA PARA GUARDAR LA WALLET
 app.post("/api/users/link-wallet", async (req, res) => {
   try {
-    const { uid, email, publicKey } = req.body;
-    await db
-      .collection("USERS")
-      .doc(uid)
-      .set({ email, publicKey, createdAt: new Date() });
+    // Ajustamos las variables para que coincidan con el JSON del frontend
+    const { uid, correo, llavePublica } = req.body;
+
+    await db.collection("USERS").doc(uid).set({
+      email: correo,
+      publicKey: llavePublica, // Aseguramos que guardamos el dato correcto
+      createdAt: new Date(),
+    });
+
     res.json({ exito: true });
   } catch (error) {
+    console.error("Error en servidor:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -38,6 +43,7 @@ app.get("/api/users/:uid", async (req, res) => {
     if (!doc.exists) return res.status(404).json({ error: "No encontrado" });
     res.json(doc.data());
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: error.message });
   }
 });
