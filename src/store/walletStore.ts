@@ -87,18 +87,26 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   verifySeed: (onSuccess) => {
     const { seed, selectedWords, resetVerification } = get();
     const isValid = validateSeedOrder(seed, selectedWords);
+    
+    // 1. Reflejamos el éxito en la UI
     set({ validationResult: isValid });
 
     if (isValid) {
-      saveSeedToStorage(seed); 
-      setTimeout(() => {
-        set({ step: 3, isWalletConfigured: true }); 
-        onSuccess();
-      }, 1500);
+      // 2. Aislamos el guardado para evitar fallos silenciosos
+      try {
+        saveSeedToStorage(seed); 
+      } catch (error) {
+        console.error("No se pudo guardar la semilla localmente:", error);
+      }
+      
+      // 3. Cambio de estado INSTANTÁNEO (Sin setTimeout)
+      set({ step: 3, isWalletConfigured: true }); 
+      
+      // Ejecutamos el callback si existe
+      if (onSuccess) onSuccess();
     } else {
-      setTimeout(() => {
-        resetVerification();
-      }, 1500);
+      // Si la clave es incorrecta, limpiamos instantáneamente
+      resetVerification();
     }
   },
 
@@ -124,14 +132,18 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   checkWalletStatus: async (uid: string) => {
     try {
       const existingSeed = getSeedFromStorage();
+
       if (existingSeed) {
-        set({ isWalletConfigured: true, step: 3 });
+        // COMPORTAMIENTO 1: Si YA hay una clave guardada, directo al Dashboard
+        set({ seed: existingSeed, isWalletConfigured: true, step: 3 });
       } else {
-        set({ isWalletConfigured: false });
+        // COMPORTAMIENTO 2: Si NO hay clave creada, generamos una nueva y vamos a la pantalla de creación
+        const newSeed = generateSeedPhrase();
+        set({ seed: newSeed, isWalletConfigured: false, step: 1 });
       }
     } catch (error) {
       console.error("Error al verificar estado de la wallet:", error);
-      set({ isWalletConfigured: false });
+      set({ isWalletConfigured: false, step: 1 });
     }
   }
 }));

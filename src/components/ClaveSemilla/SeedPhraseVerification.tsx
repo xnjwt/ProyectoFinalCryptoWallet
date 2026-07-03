@@ -66,6 +66,7 @@ export const SeedPhraseVerification = () => {
           
           <button
             onClick={() => verifySeed(() => {})}
+            
             disabled={selectedWords.length !== 12 || validationResult === true}
             className={`flex-1 py-3 rounded-xl font-bold transition-all duration-300 ${
               selectedWords.length === 12 && validationResult !== true

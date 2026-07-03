@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { auth } from "../FirebaseConfig";
+import { auth } from "../../FirebaseConfig";
 
 export const Dashboard = () => {
   const [wallet, setWallet] = useState(null);
@@ -32,10 +32,10 @@ export const Dashboard = () => {
         </p>
       </div>
 
-      {/* Aquí mantienes tus activos (puedes dejarlos como están) */}
+      {}
       <div className="bg-gray-900/50 rounded-3xl p-6 border border-gray-800">
         <h3 className="text-xl font-bold text-white mb-4">Tus Activos</h3>
-        {/* ... tu código de los activos (map de cryptoAssets) ... */}
+        {}
       </div>
     </div>
   );
