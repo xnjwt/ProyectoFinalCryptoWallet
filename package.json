@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@ladle/react": "^5.1.1",
     "@tailwindcss/vite": "^4.3.1",
     "@types/bip39": "^2.4.2",
     "@types/crypto-js": "^4.2.2",

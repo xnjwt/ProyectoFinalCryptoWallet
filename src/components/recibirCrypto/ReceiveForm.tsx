@@ -1,5 +1,26 @@
+import { FormEvent } from 'react';
 import { Box, Switch, Typography, TextField, MenuItem, Alert } from '@mui/material';
 import { useReceiveStore } from '../../store/receiveStore';
+import { useConfigStore } from '../../store/configStore';
+
+const textos = {
+  es: {
+    tituloQrInteligente: "QR Inteligente",
+    descQrActivo: "Si hay algún error en la app externa, prueba desactivando este modo.",
+    descQrInactivo: "Permite transferencias crudas sin montos fijos.",
+    advertenciaRed: "Asegúrate de enviar los fondos mediante la red",
+    labelMonto: "Monto (Opcional)",
+    labelToken: "Token",
+  },
+  en: {
+    tituloQrInteligente: "Smart QR",
+    descQrActivo: "If there is any error in the external app, try disabling this mode.",
+    descQrInactivo: "Allows raw transfers without fixed amounts.",
+    advertenciaRed: "Make sure to send the funds through the network",
+    labelMonto: "Amount (Optional)",
+    labelToken: "Token",
+  }
+};
 
 const tokensByNetwork: Record<string, string[]> = {
   Solana: ['USDC', 'SOL', 'USDT'],
@@ -8,6 +29,9 @@ const tokensByNetwork: Record<string, string[]> = {
 };
 
 export const ReceiveForm = () => {
+  const idioma = useConfigStore((state) => state.idioma);
+  const t = textos[idioma] || textos.es;
+
   const smartQrActive = useReceiveStore((state) => state.smartQrActive);
   const receiveAmount = useReceiveStore((state) => state.receiveAmount);
   const selectedNetwork = useReceiveStore((state) => state.selectedNetwork);
@@ -19,15 +43,13 @@ export const ReceiveForm = () => {
 
   return (
     <Box sx={{ mb: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, gap: 2 }}>
         <Box>
-          <Typography fontWeight="bold" sx={{ color: '#00e5ff', mb: 0.5 }}>
-            QR Inteligente
+          <Typography fontWeight={700} color="primary.main" sx={{ mb: 0.5 }}>
+            {t.tituloQrInteligente}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', lineHeight: 1.3 }}>
-            {smartQrActive
-              ? "Si hay algún error en la app externa, prueba desactivando este modo."
-              : "Permite transferencias crudas sin montos fijos."}
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', lineHeight: 1.4 }}>
+            {smartQrActive ? t.descQrActivo : t.descQrInactivo}
           </Typography>
         </Box>
         <Switch
@@ -38,25 +60,35 @@ export const ReceiveForm = () => {
       </Box>
 
       {!smartQrActive && (
-        <Alert severity="warning" variant="outlined" sx={{ mb: 2, py: 0.5, color: '#ffb74d', borderColor: '#ffb74d' }}>
-          Asegúrate de enviar los fondos mediante la red {selectedNetwork}.
+        <Alert 
+          severity="warning" 
+          variant="outlined" 
+          sx={{ 
+            mb: 3, 
+            py: 1, 
+            borderRadius: '12px',
+            color: 'warning.main',
+            borderColor: 'warning.main',
+            '& .MuiAlert-icon': { color: 'warning.main' }
+          }}
+        >
+          {t.advertenciaRed} {selectedNetwork}.
         </Alert>
       )}
 
       {smartQrActive && (
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
           <TextField
             variant="outlined"
-            label="Monto (Opcional)"
+            label={t.labelMonto}
             type="number"
             value={receiveAmount}
             onChange={(e) => {
               const val = parseFloat(e.target.value);
-              if (val < 0) return; // Validación extra
+              if (val < 0) return;
               setReceiveAmount(e.target.value);
             }}
             onKeyDown={(e) => {
-              // Bloquea signos negativos, exponenciales y sumas
               if (e.key === '-' || e.key === 'e' || e.key === '+') {
                 e.preventDefault();
               }
@@ -65,22 +97,26 @@ export const ReceiveForm = () => {
             sx={{ 
               flex: 2,
               '& input[type=number]': {
-                MozAppearance: 'textfield', // Oculta spinners en Firefox
+                MozAppearance: 'textfield',
               },
               '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
-                WebkitAppearance: 'none', // Oculta spinners en Chrome/Safari/Edge
+                WebkitAppearance: 'none', 
                 margin: 0,
               }
             }}
-            slotProps={{ htmlInput: { min: 0, step: "any" } }}
+            slotProps={{ 
+              htmlInput: { min: 0, step: "any" },
+              inputLabel: { shrink: true } 
+            }}
           />
           <TextField
             select
             variant="outlined"
-            label="Token"
+            label={t.labelToken}
             value={selectedToken}
             onChange={(e) => setToken(e.target.value)}
             sx={{ flex: 1 }}
+            slotProps={{ inputLabel: { shrink: true } }}
           >
             {tokensByNetwork[selectedNetwork]?.map((tk) => (
               <MenuItem key={tk} value={tk}>

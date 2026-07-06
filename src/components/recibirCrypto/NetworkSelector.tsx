@@ -1,6 +1,16 @@
 import { MenuItem, TextField, Box } from '@mui/material';
 import { useReceiveStore } from '../../store/receiveStore';
+import { useConfigStore } from '../../store/configStore';
 import { Coins, Flame, Orbit } from 'lucide-react';
+
+const textos = {
+  es: {
+    labelRed: "Red de Destino",
+  },
+  en: {
+    labelRed: "Destination Network",
+  }
+};
 
 const networks = [
   { name: 'Solana', icon: Orbit },
@@ -9,6 +19,9 @@ const networks = [
 ];
 
 export const NetworkSelector = () => {
+  const idioma = useConfigStore((state) => state.idioma);
+  const t = textos[idioma] || textos.es;
+
   const selectedNetwork = useReceiveStore((state) => state.selectedNetwork);
   const setNetwork = useReceiveStore((state) => state.setNetwork);
 
@@ -16,18 +29,19 @@ export const NetworkSelector = () => {
     <TextField
       select
       variant="outlined"
-      label="Red de Destino"
+      label={t.labelRed}
       value={selectedNetwork}
       onChange={(e) => setNetwork(e.target.value)}
       fullWidth
-      sx={{ mb: 2 }}
+      sx={{ mb: 3 }}
+      slotProps={{ inputLabel: { shrink: true } }}
     >
       {networks.map((net) => {
         const Icon = net.icon;
         return (
           <MenuItem key={net.name} value={net.name}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Icon size={18} color="#00e5ff" />
+              <Icon size={18} />
               {net.name}
             </Box>
           </MenuItem>
