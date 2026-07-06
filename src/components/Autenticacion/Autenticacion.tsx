@@ -8,7 +8,7 @@ import { useConfigStore } from "../../store/configStore";
 
 const textos = {
   es: {
-    appTitulo: "Wallet-Crypto",
+    appTitulo: "Lux Wallet",
     loginTitulo: "Iniciar Sesión",
     registroTitulo: "Crear Cuenta",
     labelIdentificador: "CORREO ELECTRÓNICO O USUARIO",
@@ -29,7 +29,7 @@ const textos = {
     errorNoExiste: "El nombre de usuario no existe."
   },
   en: {
-    appTitulo: "Wallet-Crypto",
+    appTitulo: "Lux Wallet",
     loginTitulo: "Sign In",
     registroTitulo: "Create Account",
     labelIdentificador: "EMAIL OR USERNAME",
