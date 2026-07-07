@@ -2,25 +2,39 @@ import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  deleteUser,
 } from "firebase/auth";
 //import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth } from "../FirebaseConfig";
 import { useWalletStore } from "../store/walletStore";
+import { passwordStrength } from "check-password-strength";
 
 export const FormularioAcceso = ({ onAuthSuccess }) => {
   const [esModoLogin, setEsModoLogin] = useState(true);
-
-  // Renombramos 'correo' a 'identificador'
-  // porque ahora sirve para ambas cosas en el login
   const [identificador, setIdentificador] = useState("");
   const [username, setUsername] = useState("");
   const [correoRegistro, setCorreoRegistro] = useState("");
   const [contrasena, setContrasena] = useState("");
 
+  // --- NUEVOS ESTADOS ---
+  const [confirmarContrasena, setConfirmarContrasena] = useState("");
+  const [fortaleza, setFortaleza] = useState({ id: -1, value: "" });
+
   const [mensajeError, setMensajeError] = useState("");
   const [estaCargando, setEstaCargando] = useState(false);
-
   const setStep = useWalletStore((state) => state.setStep);
+
+  // --- FUNCION PARA LA CONTRASEÑA ---
+  const manejarCambioContrasena = (e) => {
+    const valor = e.target.value;
+    setContrasena(valor);
+    // Evaluamos la fortaleza solo si hay texto
+    if (valor.length > 0) {
+      setFortaleza(passwordStrength(valor));
+    } else {
+      setFortaleza({ id: -1, value: "" });
+    }
+  };
 
   const manejarAutenticacion = async (evento) => {
     evento.preventDefault();
@@ -37,7 +51,7 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
           );
           const datos = await respuesta.json();
           if (!respuesta.ok || !datos.correo)
-            throw new Error("El nombre de usuario no existe.");
+            throw new Error("El nombre de usuario no existe");
           emailParaLogin = datos.correo;
         }
         // Iniciamos sesión con el correo (ya sea que lo ingresó directo o lo obtuvimos del username)
@@ -49,6 +63,14 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
         onAuthSuccess(credenciales.user);
       } else {
         // --- VALIDACIONES DE USERNAME ---
+        if (contrasena !== confirmarContrasena) {
+          throw new Error("Las contraseñas no coinciden. Verifícalas.");
+        }
+        if (fortaleza.id < 2) {
+          throw new Error(
+            "La contraseña es muy débil. Usa mayúsculas, números y símbolos.",
+          );
+        }
         //Validar que no tenga espacios
         if (username.trim() === "" || username.includes(" ")) {
           throw new Error(
@@ -61,7 +83,7 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
         );
         const dataVerificacion = await verificarUser.json();
         if (dataVerificacion.existe)
-          throw new Error("Este nombre de usuario ya está en uso. Elige otro.");
+          throw new Error("Este nombre de usuario ya está en uso. Elige otro");
 
         // --- FLUJO NORMAL DE REGISTRO ---
         const credenciales = await createUserWithEmailAndPassword(
@@ -69,24 +91,43 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
           correoRegistro,
           contrasena,
         );
-        const uid = credenciales.user.uid;
+        const usuarioFirebase = credenciales.user;
+        //const uid = credenciales.user.uid;
 
-        //Guardado en la base de datos
-        await fetch("http://localhost:3000/api/users/link-wallet", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // Agregamos el username al payload que se envía al servidor actual
-          body: JSON.stringify({
-            uid,
-            correo: correoRegistro,
-            username,
-          }),
-        });
-        setStep(1);
-        onAuthSuccess(credenciales.user);
+        try {
+          //Guardado en la base de datos
+          const respuestaDB = await fetch(
+            "http://localhost:3000/api/users/link-wallet",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                uid: usuarioFirebase.uid,
+                correo: correoRegistro,
+                username,
+              }),
+            },
+          );
+
+          // Evaluamos si el servidor respondió con un error
+          if (!respuestaDB.ok) {
+            throw new Error("Fallo en el servidor al enlazar la wallet");
+          }
+          // Si todo salió bien, actualizamos el estado
+          setStep(1);
+          onAuthSuccess(usuarioFirebase);
+        } catch (errorDB) {
+          // EL ROLLBACK: Si falla el backend, eliminamos el usuario recién creado
+          await deleteUser(usuarioFirebase);
+          throw new Error(
+            "No se pudo completar el registro. Inténtalo de nuevo.",
+            {
+              cause: errorDB,
+            },
+          );
+        }
       }
     } catch (error) {
-      // Simplificamos los mensajes de error de Firebase para el usuario
       if (error.code === "auth/invalid-credential") {
         setMensajeError("Credenciales incorrectas.");
       } else {
@@ -100,8 +141,19 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
   const alternarModo = () => {
     setEsModoLogin(!esModoLogin);
     setMensajeError("");
-    setUsername(""); // Limpiamos el username al cambiar de modo
+    setUsername("");
+    setContrasena("");
+    setConfirmarContrasena("");
+    setFortaleza({ id: -1, value: "" });
   };
+
+  //Esto es un diccionario para el apartado de validar contraseña
+  const configuracionFortaleza = [
+    { color: "bg-red-500", ancho: "w-1/4", texto: "Muy débil" },
+    { color: "bg-orange-500", ancho: "w-2/4", texto: "Débil" },
+    { color: "bg-yellow-400", ancho: "w-3/4", texto: "Regular" },
+    { color: "bg-green-500", ancho: "w-full", texto: "Fuerte" },
+  ];
 
   //Ocultar lo de recuperar contra
   /*const manejarRecuperacionContrasena = async () => {
@@ -127,12 +179,10 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
       <h1 className="text-4xl font-extrabold text-center mb-8 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] tracking-wide">
         Wallet-Crypto
       </h1>
-
       <div className="bg-[#0b1320] border border-cyan-900/30 rounded-2xl p-8 md:p-10 shadow-2xl w-full max-w-md">
         <h2 className="text-2xl font-bold text-cyan-400 text-center mb-8">
           {esModoLogin ? "Iniciar Sesión" : "Crear Cuenta"}
         </h2>
-
         <form onSubmit={manejarAutenticacion} className="space-y-5">
           {esModoLogin ? (
             <div>
@@ -188,10 +238,43 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
               className="w-full bg-black/20 border border-cyan-900/50 text-cyan-200 px-4 py-3 rounded-lg focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-cyan-900/50"
               placeholder="••••••••"
               value={contrasena}
-              onChange={(e) => setContrasena(e.target.value)}
+              onChange={manejarCambioContrasena}
               required
             />
+
+            {/* INDICADOR DE FORTALEZA VISUAL (Solo se muestra en el registro) */}
+            {!esModoLogin && fortaleza.id >= 0 && (
+              <div className="mt-2">
+                <div className="h-1.5 w-full bg-cyan-950 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${configuracionFortaleza[fortaleza.id].color} ${configuracionFortaleza[fortaleza.id].ancho}`}
+                  ></div>
+                </div>
+                <p
+                  className={`text-xs mt-1 font-semibold text-right ${configuracionFortaleza[fortaleza.id].color.replace("bg-", "text-")}`}
+                >
+                  {configuracionFortaleza[fortaleza.id].texto}
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* CAMPO DE CONFIRMACIÓN (Solo se muestra en el registro) */}
+          {!esModoLogin && (
+            <div>
+              <label className="block text-cyan-700 mb-2 text-sm font-bold tracking-wide">
+                CONFIRMAR CONTRASEÑA
+              </label>
+              <input
+                type="password"
+                className="w-full bg-black/20 border border-cyan-900/50 text-cyan-200 px-4 py-3 rounded-lg focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-cyan-900/50"
+                placeholder="••••••••"
+                value={confirmarContrasena}
+                onChange={(e) => setConfirmarContrasena(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           {mensajeError && (
             <div className="bg-red-950/40 text-red-400 border border-red-900/50 text-sm font-semibold p-3 rounded-lg text-center">

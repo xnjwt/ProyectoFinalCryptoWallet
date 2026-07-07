@@ -1,10 +1,13 @@
 import { useState, FormEvent } from "react";
-import { Box, Typography, Button, Paper, Alert, TextField, CircularProgress } from "@mui/material";
+import { Box, Typography, Button, Paper, Alert, TextField, CircularProgress, LinearProgress } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
 import { auth } from "../../FirebaseConfig";
 import { useWalletStore } from "../../store/walletStore";
 import { useConfigStore } from "../../store/configStore";
+import { passwordStrength } from "check-password-strength"; 
+import { registrarNuevoUsuario } from "../../services/authService";
+import { iniciarSesionConIdentificador } from "../../services/authService";
 
 const textos = {
   es: {
@@ -26,7 +29,25 @@ const textos = {
     errorCredenciales: "Credenciales incorrectas.",
     errorUsername: "El nombre de usuario es obligatorio y no puede contener espacios.",
     errorExiste: "Este nombre de usuario ya está en uso. Elige otro.",
-    errorNoExiste: "El nombre de usuario no existe."
+    errorNoExiste: "El nombre de usuario no existe.",
+    errorRed: "No se pudo conectar con el servidor. Verifica tu conexión.",
+    errorServidor: "Ocurrió un error inesperado. Intenta más tarde.",
+    contrasenasNoCoinciden: "Las contraseñas no coinciden. Verifícalas.",
+    labelConfirmarContrasena: "CONFIRMAR CONTRASEÑA *",
+    placeholderConfirmarContrasena: "Repite tu contraseña",
+    contrasenaDebil: "La contraseña es muy débil. Usa mayúsculas, números y símbolos.",
+    errorRegistro: "No se pudo completar el registro. Inténtalo de nuevo.",
+    fuerzaDebil: "Débil",
+    fuerzaMedio: "Medio",
+    fuerzaFuerte: "Fuerte",
+    faltaRequisitos: "Te falta: ",
+    reqMinusculas: "minúsculas",
+    reqMayusculas: "mayúsculas",
+    reqNumeros: "números",
+    reqSimbolos: "símbolos",
+    reqLongitud: "mínimo 6 caracteres",
+    contrasenasCoinciden: "Las contraseñas coinciden correctamente.",
+    contrasenasNoCoincidenInline: "Las contraseñas aún no coinciden.",
   },
   en: {
     appTitulo: "Lux Wallet",
@@ -47,7 +68,25 @@ const textos = {
     errorCredenciales: "Incorrect credentials.",
     errorUsername: "Username is required and cannot contain spaces.",
     errorExiste: "This username is already taken. Choose another one.",
-    errorNoExiste: "Username does not exist."
+    errorNoExiste: "Username does not exist.",
+    errorRed: "Could not connect to the server. Check your connection.",
+    errorServidor: "An unexpected error occurred. Try again later.",
+    contrasenasNoCoinciden: "Passwords do not match. Please verify them.",
+    labelConfirmarContrasena: "CONFIRM PASSWORD *",
+    placeholderConfirmarContrasena: "Repeat your password",
+    contrasenaDebil: "The password is too weak. Use uppercase letters, numbers, and symbols.",
+    errorRegistro: "Could not complete registration. Please try again.",
+    fuerzaDebil: "Weak",
+    fuerzaMedio: "Medium",
+    fuerzaFuerte: "Strong",
+    faltaRequisitos: "Missing: ",
+    reqMinusculas: "lowercase",
+    reqMayusculas: "uppercase",
+    reqNumeros: "numbers",
+    reqSimbolos: "symbols",
+    reqLongitud: "minimum 6 characters",
+    contrasenasCoinciden: "Passwords match successfully.",
+    contrasenasNoCoincidenInline: "Passwords do not match yet.",
   }
 };
 
@@ -59,12 +98,12 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
 
-
   const [esModoLogin, setEsModoLogin] = useState(true);
   const [identificador, setIdentificador] = useState("");
   const [username, setUsername] = useState("");
   const [correoRegistro, setCorreoRegistro] = useState("");
   const [contrasena, setContrasena] = useState("");
+  const [confirmarContrasena, setConfirmarContrasena] = useState(""); // Nuevo estado para confirmación
 
   const [mensajeError, setMensajeError] = useState("");
   const [estaCargando, setEstaCargando] = useState(false);
@@ -72,62 +111,41 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
   const manejarAutenticacion = async (evento: FormEvent) => {
     evento.preventDefault();
     setMensajeError("");
+
+    // Validación local: Verificar que las contraseñas coincidan antes de procesar en el servidor
+    if (!esModoLogin && contrasena !== confirmarContrasena) {
+      setMensajeError(t.contrasenasNoCoinciden);
+      return;
+    }
+
     setEstaCargando(true);
 
     try {
       if (esModoLogin) {
-        let emailParaLogin = identificador;
-        if (!identificador.includes("@")) {
-          const respuesta = await fetch(
-            `http://localhost:3000/api/users/get-email/${identificador}`
-          );
-          const datos = await respuesta.json();
-          if (!respuesta.ok || !datos.correo) throw new Error(t.errorNoExiste);
-          emailParaLogin = datos.correo;
-        }
-        
-        const credenciales = await signInWithEmailAndPassword(
-          auth,
-          emailParaLogin,
-          contrasena
-        );
+        const credenciales = await iniciarSesionConIdentificador(identificador, contrasena);
         onAuthSuccess(credenciales.user);
       } else {
-        if (username.trim() === "" || username.includes(" ")) {
-          throw new Error(t.errorUsername);
-        }
-        
-        const verificarUser = await fetch(
-          `http://localhost:3000/api/users/check-username/${username}`
-        );
-        const dataVerificacion = await verificarUser.json();
-        if (dataVerificacion.existe) throw new Error(t.errorExiste);
-
-        const credenciales = await createUserWithEmailAndPassword(
-          auth,
-          correoRegistro,
-          contrasena
-        );
-        const uid = credenciales.user.uid;
-
-        await fetch("http://localhost:3000/api/users/link-wallet", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            uid,
-            correo: correoRegistro,
-            username,
-          }),
-        });
-        
-        setStep(1);
+        const credenciales = await registrarNuevoUsuario(correoRegistro, contrasena, username);
         onAuthSuccess(credenciales.user);
       }
     } catch (error: any) {
-      if (error.code === "auth/invalid-credential") {
-        setMensajeError(t.errorCredenciales);
-      } else {
-        setMensajeError(error.message);
+      switch (error.message) {
+        case "USER_NOT_FOUND":
+          setMensajeError(t.errorNoExiste);
+          break;
+        case "INVALID_USERNAME_FORMAT":
+          setMensajeError(t.errorUsername);
+          break;
+        case "USERNAME_TAKEN":
+          setMensajeError(t.errorExiste);
+          break;
+        default:
+          if (error.code === "auth/invalid-credential") {
+            setMensajeError(t.errorCredenciales);
+          } else {
+            setMensajeError(error.message || t.errorServidor);
+          }
+          break;
       }
     } finally {
       setEstaCargando(false);
@@ -140,8 +158,40 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
     setIdentificador("");
     setCorreoRegistro("");
     setContrasena("");
+    setConfirmarContrasena("");
     setUsername("");
   };
+
+  // 1. Derivamos la evaluación completa de la contraseña
+  const evaluacionContrasena = passwordStrength(contrasena);
+
+  // 2. Mapeamos estilos visuales
+  const obtenerEstilosFuerza = (id: number) => {
+    if (id <= 1) return { progreso: (id + 1) * 25, color: "error" as const, textoFuerza: t.fuerzaDebil };
+    if (id === 2) return { progreso: 75, color: "warning" as const, textoFuerza: t.fuerzaMedio };
+    return { progreso: 100, color: "success" as const, textoFuerza: t.fuerzaFuerte };
+  };
+
+  const { progreso, color, textoFuerza } = obtenerEstilosFuerza(evaluacionContrasena.id);
+
+  // 3. Generamos dinámicamente un mensaje indicando qué tipos de caracteres faltan
+  const obtenerSugerenciaFuerza = () => {
+    if (evaluacionContrasena.id === 3) return "";
+    
+    const faltantes: string[] = [];
+    if (contrasena.length < 6) faltantes.push(t.reqLongitud);
+    if (!evaluacionContrasena.contains.includes("lowercase")) faltantes.push(t.reqMinusculas);
+    if (!evaluacionContrasena.contains.includes("uppercase")) faltantes.push(t.reqMayusculas);
+    if (!evaluacionContrasena.contains.includes("number")) faltantes.push(t.reqNumeros);
+    if (!evaluacionContrasena.contains.includes("symbol")) faltantes.push(t.reqSimbolos);
+
+    return faltantes.length > 0 ? `${t.faltaRequisitos}${faltantes.join(", ")}.` : "";
+  };
+
+  const mensajeSugerencia = obtenerSugerenciaFuerza();
+  // Validación en tiempo real para el campo de confirmación
+  const lasContrasenasCoinciden = contrasena === confirmarContrasena;
+  const mostrarValidacionConfirmacion = !esModoLogin && confirmarContrasena.length > 0;
 
   return (
     <Box
@@ -245,8 +295,57 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
             onChange={(e) => setContrasena(e.target.value)}
             disabled={estaCargando}
             slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ mb: 3 }}
+            sx={{ mb: esModoLogin ? 3 : 1 }}
           />
+
+          {!esModoLogin && contrasena && (
+            <Box sx={{ mb: 2, px: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={progreso}
+                color={color}
+                sx={{ height: 4, borderRadius: 2 }}
+              />
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', maxWidth: '75%' }}>
+                  {mensajeSugerencia}
+                </Typography>
+                <Typography variant="caption" color={`${color}.main`} sx={{ fontWeight: "bold" }}>
+                  {textoFuerza}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {!esModoLogin && (
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                type="password"
+                label={t.labelConfirmarContrasena}
+                placeholder={t.placeholderConfirmarContrasena}
+                value={confirmarContrasena}
+                onChange={(e) => setConfirmarContrasena(e.target.value)}
+                disabled={estaCargando}
+                slotProps={{ inputLabel: { shrink: true } }}
+                error={mostrarValidacionConfirmacion && !lasContrasenasCoinciden}
+                sx={{ mb: 0.5 }}
+              />
+              
+              {mostrarValidacionConfirmacion && (
+                <Typography
+                  variant="caption"
+                  color={lasContrasenasCoinciden ? "success.main" : "error.main"}
+                  sx={{ display: "block", pl: 1, fontWeight: "bold" }}
+                >
+                  {lasContrasenasCoinciden ? `✓ ${t.contrasenasCoinciden}` : `✗ ${t.contrasenasNoCoincidenInline}`}
+                </Typography>
+              )}
+            </Box>
+          )}
 
           {mensajeError && (
             <Alert
