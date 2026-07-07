@@ -31,3 +31,28 @@ export const buildCryptoUri = (network: string, address: string, amount?: string
   const tokenQuery = token ? `&spl-token=${token}` : '';
   return `${baseScheme}:${address}?amount=${amount}${tokenQuery}`;
 };
+
+export const parseCryptoUri = (uri: string, redesDisponibles: string[]) => {
+  try {
+    if (!uri.includes(':')) {
+      return { direccion: uri };
+    }
+
+    const url = new URL(uri);
+    const redProtocolo = url.protocol.replace(':', '');
+    const params = new URLSearchParams(url.search);
+
+    const redMapeada = redesDisponibles.find(
+      (r) => r.toLowerCase() === redProtocolo.toLowerCase()
+    );
+
+    return {
+      direccion: url.pathname,
+      monto: params.get('amount') || undefined,
+      token: params.get('spl-token') || undefined,
+      red: redMapeada
+    };
+  } catch {
+    return { direccion: uri };
+  }
+};

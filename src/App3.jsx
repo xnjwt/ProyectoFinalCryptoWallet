@@ -10,12 +10,13 @@ import { ReceiveForm } from "./components/recibirCrypto/ReceiveForm";
 import { VerificarFrase } from "./components/ClaveSemilla/VerificarFrase";
 import { Autenticacion } from "./components/Autenticacion/Autenticacion";
 import { Configuracion } from "./components/dashboard/Configuracion";
+import { EnviarCrypto } from "./components/EnviarCrypto/EnviarCrypto";
 
 
 function App() {
   const [user, setUser] = useState(null);
   return (
-   <Dashboard />
+   <EnviarCrypto/>
   );
 }
 

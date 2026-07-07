@@ -13,6 +13,7 @@ import { Configuracion } from "./components/dashboard/Configuracion";
 import { Autenticacion } from "./components/Autenticacion/Autenticacion";
 import { ArrowLeft } from "lucide-react";
 import RecibirCripto from "./components/recibirCrypto/RecibirCripto";
+import { EnviarCrypto } from "./components/EnviarCrypto/EnviarCrypto";
 
 function App() {
   const checkWalletStatus = useWalletStore((state) => state.checkWalletStatus);
@@ -138,6 +139,7 @@ function App() {
       {vistaActual === 'DASHBOARD' && <Dashboard />}
       {vistaActual === 'CONFIGURACION' && <Configuracion />}
       {vistaActual === 'RECIBIR_CRYPTO' && <RecibirCripto />}
+      {vistaActual === 'ENVIAR_CRYPTO' && <EnviarCrypto />}
     </Container>
   </Box>
 );

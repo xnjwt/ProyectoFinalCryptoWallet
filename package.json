@@ -20,6 +20,7 @@
     "crypto-js": "^4.2.0",
     "ed25519-hd-key": "^2.0.0",
     "firebase": "^12.15.0",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.21.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
