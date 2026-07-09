@@ -311,3 +311,4 @@ export const FormularioAcceso = ({ onAuthSuccess }) => {
     </div>
   );
 };
+/*ya denle de baja al semestre:(*/
