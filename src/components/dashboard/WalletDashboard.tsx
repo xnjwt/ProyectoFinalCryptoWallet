@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, Typography, IconButton } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import { Sidebar } from './Sidebar';
-import { Header } from './header';
+import { Header } from './Header';
 import { AssetTabs } from './AssetTabs';
 import RecibirCripto from '../recibirCrypto/RecibirCripto';
 import { Configuracion } from './Configuracion';

@@ -36,9 +36,12 @@ function App() {
       setUsuarioActivo(user);
 
       if (!user) {
-        cambiarVista('AUTENTICACION');
         setAutenticando(false);
+        cambiarVista('AUTENTICACION');
+        console.log("Usuario no autenticado. Redirigiendo a la vista de autenticación.");
         return;
+      } else {
+        console.log("Usuario autenticado:", user.email);
       }
 
       await enrutarSesionInicial(user);
@@ -64,12 +67,10 @@ function App() {
     );
   }
 
-  if (!usuarioActivo) {
-    return <Autenticacion onAuthSuccess={() => {}} />;
-  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {vistaActual === 'AUTENTICACION' && <Autenticacion onAuthSuccess={() => {}} />}
       {vistaActual === 'GENERAR_SEMILLA' && <GenerarFraseSemilla />}
       {vistaActual === 'VERIFICAR_SEMILLA' && <VerificarFrase />}
       {(vistaActual === 'DASHBOARD' ||
