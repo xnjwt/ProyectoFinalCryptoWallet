@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
-import { Box, Typography, Button, Paper, Alert, TextField, CircularProgress, LinearProgress } from "@mui/material";
+import { Box, Typography, Button, Paper, Alert, TextField, CircularProgress, LinearProgress, InputAdornment, IconButton } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
 import { auth } from "../../FirebaseConfig";
 import { useWalletStore } from "../../store/walletStore";
@@ -105,6 +106,9 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState(""); // Nuevo estado para confirmación
 
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [mostrarConfirmarContrasena, setMostrarConfirmarContrasena] = useState(false);
+
   const [mensajeError, setMensajeError] = useState("");
   const [estaCargando, setEstaCargando] = useState(false);
 
@@ -160,12 +164,14 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
     setContrasena("");
     setConfirmarContrasena("");
     setUsername("");
+    setMostrarContrasena(false);         // Reiniciar visibilidad
+    setMostrarConfirmarContrasena(false); // Reiniciar visibilidad
   };
 
-  // 1. Derivamos la evaluación completa de la contraseña
+  //Derivamos la evaluación completa de la contraseña
   const evaluacionContrasena = passwordStrength(contrasena);
 
-  // 2. Mapeamos estilos visuales
+  //Mapeamos estilos visuales
   const obtenerEstilosFuerza = (id: number) => {
     if (id <= 1) return { progreso: (id + 1) * 25, color: "error" as const, textoFuerza: t.fuerzaDebil };
     if (id === 2) return { progreso: 75, color: "warning" as const, textoFuerza: t.fuerzaMedio };
@@ -174,7 +180,7 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
 
   const { progreso, color, textoFuerza } = obtenerEstilosFuerza(evaluacionContrasena.id);
 
-  // 3. Generamos dinámicamente un mensaje indicando qué tipos de caracteres faltan
+  //Generamos dinámicamente un mensaje indicando qué tipos de caracteres faltan
   const obtenerSugerenciaFuerza = () => {
     if (evaluacionContrasena.id === 3) return "";
     
@@ -192,6 +198,9 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
   // Validación en tiempo real para el campo de confirmación
   const lasContrasenasCoinciden = contrasena === confirmarContrasena;
   const mostrarValidacionConfirmacion = !esModoLogin && confirmarContrasena.length > 0;
+
+  const handleToggleMostrarContrasena = () => setMostrarContrasena(!mostrarContrasena);
+  const handleToggleMostrarConfirmarContrasena = () => setMostrarConfirmarContrasena(!mostrarConfirmarContrasena);
 
   return (
     <Box
@@ -288,13 +297,28 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
             margin="normal"
             required
             fullWidth
-            type="password"
+            type={mostrarContrasena ? "text" : "password"} // Cambia dinámicamente
             label={t.labelContrasena}
             placeholder="••••••••"
             value={contrasena}
             onChange={(e) => setContrasena(e.target.value)}
             disabled={estaCargando}
-            slotProps={{ inputLabel: { shrink: true } }}
+            slotProps={{
+              inputLabel: { shrink: true },
+              input: { // Inserta el ícono al final del input
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="cambiar visibilidad de contraseña"
+                      onClick={handleToggleMostrarContrasena}
+                      edge="end"
+                    >
+                      {mostrarContrasena ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
             sx={{ mb: esModoLogin ? 3 : 1 }}
           />
 
@@ -324,14 +348,29 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
                 margin="normal"
                 required
                 fullWidth
-                type="password"
+                type={mostrarConfirmarContrasena ? "text" : "password"} // Cambia dinámicamente
                 label={t.labelConfirmarContrasena}
                 placeholder={t.placeholderConfirmarContrasena}
                 value={confirmarContrasena}
                 onChange={(e) => setConfirmarContrasena(e.target.value)}
                 disabled={estaCargando}
-                slotProps={{ inputLabel: { shrink: true } }}
                 error={mostrarValidacionConfirmacion && !lasContrasenasCoinciden}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="cambiar visibilidad de confirmación de contraseña"
+                          onClick={handleToggleMostrarConfirmarContrasena}
+                          edge="end"
+                        >
+                          {mostrarConfirmarContrasena ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
                 sx={{ mb: 0.5 }}
               />
               
