@@ -1,6 +1,10 @@
 import * as bip39 from 'bip39';
 import { derivePath } from 'ed25519-hd-key';
 import { Keypair } from '@solana/web3.js';
+import * as bitcoin from 'bitcoinjs-lib';
+import { BIP32Factory } from 'bip32';
+import * as ecc from 'tiny-secp256k1';
+import { ethers } from 'ethers';
 
 export const deriveAddress = (mnemonic: string, network: string = 'Solana'): string => {
   const seed = bip39.mnemonicToSeedSync(mnemonic);
