@@ -9,6 +9,7 @@ import { useConfigStore } from "../../store/configStore";
 import { passwordStrength } from "check-password-strength"; 
 import { registrarNuevoUsuario } from "../../services/authService";
 import { iniciarSesionConIdentificador } from "../../services/authService";
+import logoApp from "../../assets/logo_lux_wallet.png";
 
 const textos = {
   es: {
@@ -209,18 +210,34 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'center',  
         bgcolor: 'background.default',
         p: 3,
       }}
     >
+      {/*contenedor para el Logo */}
+      <Box
+        component="img"
+        src={logoApp}
+        alt="Lux Wallet Logo"
+        sx={{
+          width: 150,          // Ajusta el ancho del logo
+          height: 'auto',     // Mantiene la proporción original de la imagen
+          mt: -25,             //margen negativo para mandarlo hacia arriba al logo
+          mb: 1,              // Margen inferior para separarlo del título
+          filter: (theme) => 
+            theme.palette.mode === 'dark' 
+              ? 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' 
+              : 'none'
+        }}
+      />
       <Typography
         variant="h3"
         component="h1"
         color="primary.main"
         sx={{
           fontWeight: 800,
-          mb: 4,
+          mb: 2, //4
           letterSpacing: '1px',
           textShadow: (theme) =>
             theme.palette.mode === 'dark' 
@@ -230,13 +247,30 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
       >
         {t.appTitulo}
       </Typography>
-
+      
       <Paper
         sx={{
           p: { xs: 4, md: 5 },
           maxWidth: '440px',
           width: '100%',
-          boxShadow: 3,
+          borderRadius: '16px', 
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'dark' 
+              ? alpha(theme.palette.background.paper, 0.8) 
+              : theme.palette.background.paper,
+          
+          // Sombra dinámica y difuminada
+          boxShadow: (theme) =>
+            theme.palette.mode === 'dark'
+              ? `0 16px 50px -8px ${alpha(theme.palette.primary.main, 0.25)}, 
+                 0 0 30px -2px ${alpha(theme.palette.primary.main, 0.15)}`
+              : `0 24px 50px -10px ${alpha(theme.palette.primary.main, 0.15)}`,
+          
+          //Un borde milimétrico semi-transparente que mejora el desenfoque en modo oscuro
+          border: (theme) => 
+            theme.palette.mode === 'dark' 
+              ? `1px solid ${alpha(theme.palette.primary.main, 0.2)}` 
+              : 'none',
         }}
       >
         <Typography
