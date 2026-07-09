@@ -9,8 +9,7 @@ export type VistaApp =
   | 'VERIFICAR_SEMILLA'
   | 'DASHBOARD'
   | 'CONFIGURACION'
-  | 'RECIBIR_CRYPTO'
-  | 'ENVIAR_CRYPTO';
+  | 'RECIBIR_CRYPTO';
 
 export interface AcentoConfig {
   nombre: string;
