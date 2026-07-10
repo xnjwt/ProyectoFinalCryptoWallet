@@ -1,14 +1,15 @@
-import { useState, FormEvent } from "react";
-import { Box, Typography, Button, Paper, Alert, TextField, CircularProgress, LinearProgress, InputAdornment, IconButton } from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword,} from "firebase/auth";
 import { auth } from "../../FirebaseConfig";
 import { useWalletStore } from "../../store/walletStore";
+
+import { useState, FormEvent } from "react";
+import { Box, Typography, Button, Paper, Alert, TextField, CircularProgress, LinearProgress, InputAdornment, IconButton, useTheme } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { User } from "firebase/auth";
 import { useConfigStore } from "../../store/configStore";
 import { passwordStrength } from "check-password-strength"; 
-import { registrarNuevoUsuario } from "../../services/authService";
-import { iniciarSesionConIdentificador } from "../../services/authService";
+import { registrarNuevoUsuario, iniciarSesionConIdentificador } from "../../services/authService";
 import logoApp from "../../assets/logo_lux_wallet.png";
 
 const textos = {
@@ -99,6 +100,7 @@ interface FormularioAccesoProps {
 export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
+  const theme = useTheme();
 
   const [esModoLogin, setEsModoLogin] = useState(true);
   const [identificador, setIdentificador] = useState("");
@@ -208,6 +210,36 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
   const handleToggleMostrarContrasena = () => setMostrarContrasena(!mostrarContrasena);
   const handleToggleMostrarConfirmarContrasena = () => setMostrarConfirmarContrasena(!mostrarConfirmarContrasena);
 
+  // --- ESTILOS MODERNOS ---
+  const modernTextFieldStyle = {
+    mb: 3,
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '16px',
+      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827',
+      transition: 'all 0.3s ease',
+      '& fieldset': {
+        border: 'none',
+      },
+      '&:hover fieldset': {
+        border: 'none',
+      },
+      '&.Mui-focused fieldset': {
+        border: `2px solid ${theme.palette.primary.main}`,
+      }
+    }
+  };
+
+  const labelStyle = {
+    fontSize: '0.80rem',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
+    color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+    mb: 1,
+    ml: 1,
+    display: 'block'
+  };
+
   return (
     <Box
       sx={{
@@ -217,65 +249,39 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
         alignItems: 'center',
         justifyContent: 'center',  
         bgcolor: 'background.default',
-        p: 3,
+        p: { xs: 2, sm: 4 },
       }}
     >
-      {/*contenedor para el Logo */}
+      {/* Contenedor para el Logo - Más grande y posicionado fluidamente */}
       <Box
         component="img"
         src={logoApp}
         alt="Lux Wallet Logo"
         sx={{
-          width: 150,          // Ajusta el ancho del logo
-          height: 'auto',     // Mantiene la proporción original de la imagen
-          mt: -25,             //margen negativo para mandarlo hacia arriba al logo
-          mb: 1,              // Margen inferior para separarlo del título
+          width: 300, // Más grande
+          height: 'auto',
+          mb: -5, // Separación con la tarjeta
           filter: (theme) => 
             theme.palette.mode === 'dark' 
-              ? 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' 
+              ? 'drop-shadow(0 0 15px rgba(255,255,255,0.15))' 
               : 'none'
         }}
       />
-      <Typography
-        variant="h3"
-        component="h1"
-        color="primary.main"
-        sx={{
-          fontWeight: 800,
-          mb: 2, //4
-          letterSpacing: '1px',
-          textShadow: (theme) =>
-            theme.palette.mode === 'dark' 
-              ? `0 0 20px ${alpha(theme.palette.primary.main, 0.4)}` 
-              : 'none',
-        }}
-      >
-        {t.appTitulo}
-      </Typography>
       
       <Paper
         sx={{
           p: { xs: 4, md: 5 },
-          maxWidth: '440px',
+          maxWidth: '460px',
           width: '100%',
-          borderRadius: '16px', 
-          backgroundColor: (theme) => 
-            theme.palette.mode === 'dark' 
-              ? alpha(theme.palette.background.paper, 0.8) 
-              : theme.palette.background.paper,
+          borderRadius: '40px', 
+          backgroundColor: 'background.paper',
           
-          // Sombra dinámica y difuminada
-          boxShadow: (theme) =>
-            theme.palette.mode === 'dark'
-              ? `0 16px 50px -8px ${alpha(theme.palette.primary.main, 0.25)}, 
-                 0 0 30px -2px ${alpha(theme.palette.primary.main, 0.15)}`
-              : `0 24px 50px -10px ${alpha(theme.palette.primary.main, 0.15)}`,
+          boxShadow: theme.palette.mode === 'dark'
+            ? `0 25px 50px -12px ${alpha(theme.palette.primary.main, 0.25)}, 
+               0 0 30px -2px ${alpha(theme.palette.primary.main, 0.15)}`
+            : `0 25px 50px -12px rgba(0, 0, 0, 0.1)`,
           
-          //Un borde milimétrico semi-transparente que mejora el desenfoque en modo oscuro
-          border: (theme) => 
-            theme.palette.mode === 'dark' 
-              ? `1px solid ${alpha(theme.palette.primary.main, 0.2)}` 
-              : 'none',
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : 'none',
         }}
       >
         <Typography
@@ -283,8 +289,9 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
           component="h2"
           color="text.primary"
           sx={{
-            fontWeight: 700,
+            fontWeight: 800,
             textAlign: 'center',
+            letterSpacing: '-0.02em',
             mb: 4,
           }}
         >
@@ -293,88 +300,85 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
 
         <Box component="form" onSubmit={manejarAutenticacion} noValidate>
           {esModoLogin ? (
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              label={t.labelIdentificador}
-              placeholder={t.placeholderIdentificador}
-              value={identificador}
-              onChange={(e) => setIdentificador(e.target.value.trim())}
-              disabled={estaCargando}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
+            <Box>
+              <Typography sx={labelStyle}>{t.labelIdentificador}</Typography>
+              <TextField
+                required
+                fullWidth
+                placeholder={t.placeholderIdentificador}
+                value={identificador}
+                onChange={(e) => setIdentificador(e.target.value.trim())}
+                disabled={estaCargando}
+                sx={modernTextFieldStyle}
+              />
+            </Box>
           ) : (
             <>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                type="email"
-                label={t.labelCorreo}
-                placeholder={t.placeholderCorreo}
-                value={correoRegistro}
-                onChange={(e) => setCorreoRegistro(e.target.value.trim())}
-                disabled={estaCargando}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label={t.labelUsuario}
-                placeholder={t.placeholderUsuario}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={estaCargando}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
+              <Box>
+                <Typography sx={labelStyle}>{t.labelCorreo}</Typography>
+                <TextField
+                  required
+                  fullWidth
+                  type="email"
+                  placeholder={t.placeholderCorreo}
+                  value={correoRegistro}
+                  onChange={(e) => setCorreoRegistro(e.target.value.trim())}
+                  disabled={estaCargando}
+                  sx={modernTextFieldStyle}
+                />
+              </Box>
+              <Box>
+                <Typography sx={labelStyle}>{t.labelUsuario}</Typography>
+                <TextField
+                  required
+                  fullWidth
+                  placeholder={t.placeholderUsuario}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={estaCargando}
+                  sx={modernTextFieldStyle}
+                />
+              </Box>
             </>
           )}
 
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            type={mostrarContrasena ? "text" : "password"} // Cambia dinámicamente
-            label={t.labelContrasena}
-            placeholder="••••••••"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            disabled={estaCargando}
-            slotProps={{
-              inputLabel: { shrink: true },
-              input: { // Inserta el ícono al final del input
+          <Box>
+            <Typography sx={labelStyle}>{t.labelContrasena}</Typography>
+            <TextField
+              required
+              fullWidth
+              type={mostrarContrasena ? "text" : "password"}
+              placeholder="••••••••"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+              disabled={estaCargando}
+              sx={{...modernTextFieldStyle, mb: esModoLogin ? 3 : 1}}
+              InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      aria-label="cambiar visibilidad de contraseña"
-                      onClick={handleToggleMostrarContrasena}
-                      edge="end"
-                    >
+                    <IconButton onClick={handleToggleMostrarContrasena} edge="end" sx={{ mr: 1, color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280' }}>
                       {mostrarContrasena ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
-              },
-            }}
-            sx={{ mb: esModoLogin ? 3 : 1 }}
-          />
+              }}
+            />
+          </Box>
 
           {!esModoLogin && contrasena && (
-            <Box sx={{ mb: 2, px: 1 }}>
+            <Box sx={{ mb: 3, px: 1 }}>
               <LinearProgress
                 variant="determinate"
                 value={progreso}
                 color={color}
-                sx={{ height: 4, borderRadius: 2 }}
+                sx={{ height: 6, borderRadius: 3, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
               />
               
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', maxWidth: '75%' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', maxWidth: '75%', lineHeight: 1.3 }}>
                   {mensajeSugerencia}
                 </Typography>
-                <Typography variant="caption" color={`${color}.main`} sx={{ fontWeight: "bold" }}>
+                <Typography variant="caption" color={`${color}.main`} sx={{ fontWeight: 800 }}>
                   {textoFuerza}
                 </Typography>
               </Box>
@@ -382,42 +386,34 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
           )}
 
           {!esModoLogin && (
-            <Box sx={{ mb: 3 }}>
+            <Box>
+              <Typography sx={labelStyle}>{t.labelConfirmarContrasena}</Typography>
               <TextField
-                margin="normal"
                 required
                 fullWidth
-                type={mostrarConfirmarContrasena ? "text" : "password"} // Cambia dinámicamente
-                label={t.labelConfirmarContrasena}
+                type={mostrarConfirmarContrasena ? "text" : "password"}
                 placeholder={t.placeholderConfirmarContrasena}
                 value={confirmarContrasena}
                 onChange={(e) => setConfirmarContrasena(e.target.value)}
                 disabled={estaCargando}
+                sx={{...modernTextFieldStyle, mb: 1}}
                 error={mostrarValidacionConfirmacion && !lasContrasenasCoinciden}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="cambiar visibilidad de confirmación de contraseña"
-                          onClick={handleToggleMostrarConfirmarContrasena}
-                          edge="end"
-                        >
-                          {mostrarConfirmarContrasena ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={handleToggleMostrarConfirmarContrasena} edge="end" sx={{ mr: 1, color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280' }}>
+                        {mostrarConfirmarContrasena ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
-                sx={{ mb: 0.5 }}
               />
               
               {mostrarValidacionConfirmacion && (
                 <Typography
                   variant="caption"
                   color={lasContrasenasCoinciden ? "success.main" : "error.main"}
-                  sx={{ display: "block", pl: 1, fontWeight: "bold" }}
+                  sx={{ display: "block", pl: 1, mb: 2, fontWeight: 700 }}
                 >
                   {lasContrasenasCoinciden ? `✓ ${t.contrasenasCoinciden}` : `✗ ${t.contrasenasNoCoincidenInline}`}
                 </Typography>
@@ -431,13 +427,12 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
               variant="outlined"
               sx={{
                 width: '100%',
-                mt: 2,
-                mb: 2,
-                borderRadius: '12px',
+                mb: 3,
+                borderRadius: '16px',
                 fontWeight: 600,
                 color: 'error.main',
-                borderColor: 'error.main',
-                backgroundColor: (theme) => alpha(theme.palette.error.main, 0.05),
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.3)' : 'rgba(244, 67, 54, 0.4)',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.05)' : 'rgba(244, 67, 54, 0.05)',
               }}
             >
               {mensajeError}
@@ -451,16 +446,23 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
             size="large"
             disabled={estaCargando}
             sx={{
-              py: 1.8,
-              mt: 2,
-              borderRadius: '12px',
+              py: 2,
+              mt: 1,
+              borderRadius: '16px',
               fontWeight: 700,
               fontSize: '1rem',
-              letterSpacing: '1px',
-              boxShadow: (theme) =>
-                theme.palette.mode === 'dark' && !estaCargando
-                  ? `0 0 20px ${alpha(theme.palette.primary.main, 0.35)}`
+              letterSpacing: '0.05em',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              boxShadow: theme.palette.mode === 'dark' && !estaCargando
+                ? `0 10px 20px -5px ${alpha(theme.palette.primary.main, 0.4)}`
+                : 'none',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+                boxShadow: theme.palette.mode === 'dark' && !estaCargando
+                  ? `0 15px 25px -5px ${alpha(theme.palette.primary.main, 0.5)}`
                   : 'none',
+              }
             }}
           >
             {estaCargando ? (
@@ -478,13 +480,15 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
           onClick={alternarModo}
           sx={{
             mt: 4,
+            py: 1.5,
+            borderRadius: '16px',
             fontWeight: 700,
             fontSize: '0.85rem',
-            letterSpacing: '0.5px',
+            letterSpacing: '0.05em',
             color: 'secondary.main',
             '&:hover': {
               color: 'primary.main',
-              backgroundColor: 'transparent',
+              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
             },
           }}
         >

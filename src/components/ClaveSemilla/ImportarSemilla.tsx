@@ -13,10 +13,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  useTheme,
   createFilterOptions
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import * as bip39 from "bip39";
+import { Lock } from 'lucide-react';
 
 import { useWalletStore } from "../../store/walletStore";
 import { useConfigStore } from "../../store/configStore";
@@ -62,6 +64,7 @@ const textos = {
 export const ImportarSemilla = () => {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
+  const theme = useTheme();
 
   const cambiarVista = useConfigStore((state) => state.cambiarVista);
   const importarWalletDesdeFrase = useWalletStore((state) => state.importarWalletDesdeFrase);
@@ -116,6 +119,45 @@ export const ImportarSemilla = () => {
     }
   };
 
+  // --- ESTILOS MODERNOS REUTILIZABLES ---
+  const modernTextFieldStyle = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '16px',
+      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827',
+      transition: 'all 0.3s ease',
+      '& fieldset': {
+        border: 'none',
+      },
+      '&:hover fieldset': {
+        border: 'none',
+      },
+      '&.Mui-focused fieldset': {
+        border: `2px solid ${theme.palette.primary.main}`,
+      },
+      // Aplica borde rojo sutil si hay error en la palabra
+      '&.Mui-error fieldset': {
+        border: `1px solid ${theme.palette.error.main}`,
+      }
+    },
+    // Estilo para el helper text (el mensaje de error que reservará espacio)
+    '& .MuiFormHelperText-root': {
+      mx: 1,
+      mt: 0.5,
+      fontWeight: 600,
+      fontSize: '0.75rem',
+    }
+  };
+
+  const labelStyle = {
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: theme.palette.mode === 'dark' ? '#9ca3af' : '#4b5563',
+    mb: 0.5,
+    ml: 1,
+    display: 'block'
+  };
+
   return (
     <Box
       sx={{
@@ -124,32 +166,39 @@ export const ImportarSemilla = () => {
         justifyContent: "center",
         alignItems: "center",
         bgcolor: "background.default",
-        p: 3,
+        p: { xs: 2, sm: 4 },
       }}
     >
       <Paper
         sx={{
           p: { xs: 4, md: 5 },
-          maxWidth: "650px",
+          maxWidth: "700px",
           width: "100%",
-          textAlign: "center",
-          boxShadow: 3,
-          borderRadius: "16px"
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)' 
+            : '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
+          borderRadius: "40px",
+          bgcolor: 'background.paper',
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : 'none',
         }}
       >
         <Typography 
           variant="h4" 
-          component="h2" 
-          color="primary.main" 
-          sx={{ fontWeight: 700, mb: 1 }}
+          align="center" 
+          fontWeight={800} 
+          sx={{ 
+            mb: 1,
+            color: 'text.primary',
+            letterSpacing: '-0.02em'
+          }}
         >
           {t.tituloImportar}
         </Typography>
 
-        <Typography 
+       <Typography 
           variant="body1" 
-          color="text.secondary" 
-          sx={{ mb: 4, maxWidth: "450px", mx: "auto" }}
+          align="center"
+          sx={{ mb: 4, color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280', maxWidth: "450px", mx: "auto" }}
         >
           {t.descImportar}
         </Typography>
@@ -163,37 +212,32 @@ export const ImportarSemilla = () => {
           }}
         >
           {seedWords.map((word, index) => (
-            <Autocomplete
-              key={index}
-              autoHighlight
-              forcePopupIcon={false}
-              filterOptions={filtroBip39}
-              options={
-                word.length === 0
-                  ? []
-                  : bip39Words.filter((w) => w.startsWith(word.toLowerCase())).slice(0, 5)
-              }
-              inputValue={word}
-              onInputChange={(_, newValue) => handleWordChange(index, newValue)}
-              onChange={(_, newValue) => handleWordChange(index, newValue || "")}
-              renderInput={(params) => (
-                <TextField
+            <Box key={index}>
+              <Typography sx={labelStyle}>{index + 1}. {t.labelPalabra}</Typography>
+              <Autocomplete
+                autoHighlight
+                forcePopupIcon={false}
+                filterOptions={filtroBip39}
+                options={
+                  word.length === 0
+                    ? []
+                    : bip39Words.filter((w) => w.startsWith(word.toLowerCase())).slice(0, 5)
+                }
+                inputValue={word}
+                onInputChange={(_, newValue) => handleWordChange(index, newValue)}
+                onChange={(_, newValue) => handleWordChange(index, newValue || "")}
+                renderInput={(params) => (
+                  <TextField
                     {...params}
-                    label={`${t.labelPalabra} ${index + 1}`}
                     fullWidth
-                    variant="outlined"
                     error={!isValidWord(word)}
                     helperText={!isValidWord(word) ? t.errorPalabra : " "}
-                    // 2. NUEVO: Modifica el estilo interno para redondear el borde del TextField
-                    sx={{
-                    "& .MuiOutlinedInput-root": {
-                        borderRadius: "12px", 
-                    },
-                    }}
-                    
-                />
-              )}
-            />
+                    sx={modernTextFieldStyle}
+                    // Eliminamos el 'label' nativo para que use nuestro Typography superior
+                  />
+                )}
+              />
+            </Box>
           ))}
         </Box>
 
@@ -202,8 +246,9 @@ export const ImportarSemilla = () => {
           sx={{
             mt: 1,
             textAlign: "right",
-            fontWeight: 600,
-            color: palabrasValidasContadas === 12 ? "success.main" : "text.secondary",
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            color: palabrasValidasContadas === 12 ? "#22c55e" : theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
           }}
         >
           {palabrasValidasContadas} / 12 {t.contadorPalabras}
@@ -217,12 +262,11 @@ export const ImportarSemilla = () => {
               width: "100%",
               mt: 3,
               mb: 1,
-              borderRadius: "12px",
+              borderRadius: "16px",
               fontWeight: 600,
-              boxSizing: "border-box",
               color: "error.main",
-              borderColor: "error.main",
-              backgroundColor: (theme) => alpha(theme.palette.error.main, 0.05),
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.3)' : 'rgba(244, 67, 54, 0.4)',
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.05)' : 'rgba(244, 67, 54, 0.05)',
               "& .MuiAlert-icon": { color: "error.main" },
             }}
           >
@@ -243,16 +287,17 @@ export const ImportarSemilla = () => {
             fullWidth
             onClick={() => cambiarVista('MENU_BILLETERA')}
             sx={{
-              py: 1.5,
-              borderRadius: "12px",
+              py: 2,
+              borderRadius: "16px",
               fontWeight: 700,
-              fontSize: "1rem",
-              letterSpacing: "0.5px",
-              color: "secondary.main",
-              borderColor: (theme) => alpha(theme.palette.secondary.main, 0.5),
+              fontSize: "0.95rem",
+              letterSpacing: "0.05em",
+              color: theme.palette.mode === 'dark' ? '#9ca3af' : '#4b5563',
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
               "&:hover": {
-                borderColor: "secondary.main",
-                backgroundColor: (theme) => alpha(theme.palette.secondary.main, 0.05),
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827',
               },
             }}
           >
@@ -265,15 +310,25 @@ export const ImportarSemilla = () => {
             disabled={palabrasValidasContadas !== 12 || isImporting}
             onClick={() => ejecutarImportacion()}
             sx={{
-              py: 1.5,
-              borderRadius: "12px",
+              py: 2,
+              borderRadius: "16px",
               fontWeight: 700,
-              fontSize: "1rem",
-              letterSpacing: "0.5px",
-              boxShadow: (theme) =>
-                theme.palette.mode === "dark" && palabrasValidasContadas === 12
-                  ? `0 0 20px ${alpha(theme.palette.primary.main, 0.35)}`
-                  : "none",
+              fontSize: "0.95rem",
+              letterSpacing: "0.05em",
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              boxShadow: theme.palette.mode === 'dark' && palabrasValidasContadas === 12
+                ? `0 10px 15px -3px ${alpha(theme.palette.primary.main, 0.3)}`
+                : 'none',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+                boxShadow: theme.palette.mode === 'dark' && palabrasValidasContadas === 12
+                  ? `0 10px 15px -3px ${alpha(theme.palette.primary.main, 0.5)}`
+                  : 'none',
+              },
+              '&.Mui-disabled': {
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+              }
             }}
           >
             {isImporting ? <CircularProgress size={24} color="inherit" /> : t.importar}
@@ -288,35 +343,95 @@ export const ImportarSemilla = () => {
           if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
           setModalAbierto(false);
         }}
+        PaperProps={{
+          sx: {
+            borderRadius: '32px',
+            bgcolor: theme.palette.mode === 'dark' ? '#1b1e2b' : '#ffffff',
+            boxShadow: theme.palette.mode === 'dark'
+              ? '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+              : '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
+            backgroundImage: 'none',
+            maxWidth: '420px',
+            width: '100%',
+            m: 2
+          }
+        }}
       >
-        <DialogTitle>{t.tituloModal}</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            {t.descripcionModal}
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            label={t.labelClave}
-            type="password"
-            fullWidth
-            variant="outlined"
-            value={claveManual}
-            onChange={(e) => setClaveManual(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setModalAbierto(false)} color="secondary">
-            {t.cancelar}
-          </Button>
-          <Button
-            variant="contained"
-            disabled={claveManual.length < 4 || isImporting}
-            onClick={() => ejecutarImportacion(claveManual)}
-          >
-            {isImporting ? <CircularProgress size={24} color="inherit" /> : t.proteger}
-          </Button>
-        </DialogActions>
+        <Box sx={{ p: { xs: 3, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          
+          <Box sx={{ textAlign: 'center' }}>
+            {/* Ícono de seguridad estilo insignia */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Box 
+                sx={{
+                  width: 64, height: 64, borderRadius: '20px',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'primary.main'
+                }}
+              >
+                <Lock size={32} />
+              </Box>
+            </Box>
+
+            <Typography variant="h5" fontWeight={800} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827', mb: 1 }}>
+              {t.tituloModal}
+            </Typography>
+            <Typography sx={{ fontSize: '0.95rem', color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280', lineHeight: 1.5 }}>
+              {t.descripcionModal}
+            </Typography>
+          </Box>
+
+          <Box>
+            <Typography sx={labelStyle}>{t.labelClave}</Typography>
+            <TextField
+              type="password"
+              fullWidth
+              value={claveManual}
+              onChange={(e) => setClaveManual(e.target.value)}
+              sx={modernTextFieldStyle}
+              // Nos deshacemos del 'label' nativo
+            />
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+            <Button 
+              fullWidth
+              onClick={() => setModalAbierto(false)}
+              sx={{
+                py: 1.5, borderRadius: '16px', fontWeight: 700,
+                color: theme.palette.mode === 'dark' ? '#9ca3af' : '#4b5563',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827',
+                }
+              }}
+            >
+              {t.cancelar}
+            </Button>
+            <Button
+              variant="contained"
+              fullWidth
+              disabled={claveManual.length < 4 || isImporting}
+              onClick={() => ejecutarImportacion(claveManual)}
+              sx={{
+                py: 1.5, borderRadius: '16px', fontWeight: 700, letterSpacing: '0.05em',
+                bgcolor: 'primary.main', color: 'primary.contrastText',
+                boxShadow: theme.palette.mode === 'dark' && claveManual.length >= 4
+                  ? `0 10px 15px -3px ${alpha(theme.palette.primary.main, 0.3)}` : 'none',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                  boxShadow: theme.palette.mode === 'dark' && claveManual.length >= 4
+                    ? `0 10px 15px -3px ${alpha(theme.palette.primary.main, 0.5)}` : 'none',
+                }
+              }}
+            >
+              {isImporting ? <CircularProgress size={24} color="inherit" /> : t.proteger}
+            </Button>
+          </Box>
+
+        </Box>
       </Dialog>
     </Box>
   );
