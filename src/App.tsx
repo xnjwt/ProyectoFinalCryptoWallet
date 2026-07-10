@@ -9,6 +9,8 @@ import { GenerarFraseSemilla } from "./components/ClaveSemilla/GenerarFraseSemil
 import { VerificarFrase } from "./components/ClaveSemilla/VerificarFrase";
 import { Autenticacion } from "./components/Autenticacion/Autenticacion";
 import { WalletDashboard } from "./components/dashboard/WalletDashboard";
+import { MenuWallet } from "./components/ClaveSemilla/MenuWallet";
+import { ImportarSemilla } from "./components/ClaveSemilla/ImportarSemilla";
 
 function App() {
   const checkWalletStatus = useWalletStore((state) => state.checkWalletStatus);
@@ -27,7 +29,7 @@ function App() {
       cambiarVista('DASHBOARD');
       return;
     }
-    cambiarVista('GENERAR_SEMILLA');
+    cambiarVista('MENU_BILLETERA');
   };
 
   useEffect(() => {
@@ -44,8 +46,14 @@ function App() {
         console.log("Usuario autenticado:", user.email);
       }
 
-      await enrutarSesionInicial(user);
-      setAutenticando(false);
+      try {
+        await enrutarSesionInicial(user);
+      } catch (error) {
+        console.error("Error crítico al enrutar la sesión:", error);
+        // Si hay un error severo, podrías redirigir a una pantalla de error o forzar el login
+      } finally {
+        setAutenticando(false);
+      }
     });
 
     return () => desuscribir();
@@ -70,18 +78,20 @@ function App() {
   //prueba de cambio
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      {vistaActual === 'AUTENTICACION' && <Autenticacion onAuthSuccess={() => {}} />}
-      {vistaActual === 'GENERAR_SEMILLA' && <GenerarFraseSemilla />}
-      {vistaActual === 'VERIFICAR_SEMILLA' && <VerificarFrase />}
-      {(vistaActual === 'DASHBOARD' ||
-        vistaActual === 'CONFIGURACION' ||
-        vistaActual === 'RECIBIR_CRYPTO' ||
-        vistaActual === 'ENVIAR_CRYPTO') && (
-        <WalletDashboard onLogout={manejarCerrarSesion} />
-      )}
-    </Box>
-  );
+  <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    {vistaActual === 'AUTENTICACION' && <Autenticacion onAuthSuccess={() => {}} />}
+    {vistaActual === 'MENU_BILLETERA' && <MenuWallet />}
+    {vistaActual === 'GENERAR_SEMILLA' && <GenerarFraseSemilla />}
+    {vistaActual === 'VERIFICAR_SEMILLA' && <VerificarFrase />}
+    {vistaActual === 'IMPORTAR_SEMILLA' && <ImportarSemilla />}
+    {(vistaActual === 'DASHBOARD' ||
+      vistaActual === 'CONFIGURACION' ||
+      vistaActual === 'ENVIAR_CRYPTO' ||
+      vistaActual === 'RECIBIR_CRYPTO') && (
+      <WalletDashboard onLogout={manejarCerrarSesion} />
+    )}
+  </Box>
+);
 }
 
 export default App;

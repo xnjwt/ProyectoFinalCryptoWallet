@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getSeedFromStorage } from '../services/walletService';
+import { getSeedFromStorage, obtenerClavesPublicas } from '../services/walletService';
 import { deriveAddress, getSolanaBalance, getUsdcBalance } from '../services/cryptoService';
 
 interface SaldoActivo {
@@ -34,13 +34,12 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
 
   actualizarPortafolio: async () => {
     try {
-      const mnemonic = getSeedFromStorage();
-      if (!mnemonic) {
+      const direccionSolana = obtenerClavesPublicas('solana');
+      
+      if (!direccionSolana) {
         set({ cargando: false });
         return;
       }
-
-      const direccionSolana = deriveAddress(mnemonic, 'Solana');
 
       const [saldoSol, saldoUsdc, precios] = await Promise.all([
         getSolanaBalance(direccionSolana),

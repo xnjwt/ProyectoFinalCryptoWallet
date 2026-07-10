@@ -9,6 +9,13 @@ import {
   Button,
   Chip,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  TextField,
+  DialogActions,
+  CircularProgress
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { PaletteMode } from "@mui/material";
@@ -26,7 +33,7 @@ import {
   Palette
 } from "lucide-react";
 import { useConfigStore, acentosDisponibles } from "../../store/configStore";
-import { getSeedFromStorage } from "../../services/walletService";
+import { getSeedFromStorage, obtenerSemilla } from "../../services/walletService";
 
 const textos = {
   es: {
@@ -49,6 +56,11 @@ const textos = {
     copiado: "¡Copiada!",
     descargar: "Descargar respaldo (.txt)",
     sinSemilla: "No se encontró ninguna wallet configurada en este dispositivo.",
+    tituloModal: "Desbloquear Semilla",
+    descripcionModal: "Tu dispositivo no soporta biometría o requieres tu contraseña manual para desencriptar la bóveda.",
+    labelClave: "Contraseña de Encriptación",
+    cancelar: "Cancelar",
+    desbloquear: "Desbloquear"
   },
   en: {
     tituloIdioma: "Language",
@@ -70,6 +82,11 @@ const textos = {
     copiado: "Copied!",
     descargar: "Download backup (.txt)",
     sinSemilla: "No wallet configured on this device was found.",
+    tituloModal: "Unlock Seed",
+    descripcionModal: "Your device does not support biometrics or you need your manual password to decrypt the vault.",
+    labelClave: "Encryption Password",
+    cancelar: "Cancel",
+    desbloquear: "Unlock"
   },
 };
 
@@ -81,11 +98,69 @@ export const Configuracion = () => {
   const cambiarIdioma = useConfigStore((state) => state.cambiarIdioma);
   const actualizarConfiguracionGlobal = useConfigStore((state) => state.actualizarConfiguracionGlobal);
 
+  const t = textos[idioma] || textos.es;
+  // Estados de la Semilla
+  const [semilla, setSemilla] = useState<string | null>(null);
   const [semillaVisible, setSemillaVisible] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [errorAcceso, setErrorAcceso] = useState<string | null>(null);
+  
+  // Estados del Modal Plan B
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [claveManual, setClaveManual] = useState("");
 
-  const t = textos[idioma] || textos.es;
-  const semilla = getSeedFromStorage();
+  // Comprobar silenciosamente si existe la llave en localStorage (sin desencriptarla aún)
+  const existeRespaldo = !!localStorage.getItem("_seguro_wallet_seed");
+
+  const manejarMostrarSemilla = async () => {
+    // Si ya está visible, solo la ocultamos y limpiamos la memoria RAM por seguridad
+    if (semillaVisible) {
+      setSemillaVisible(false);
+      setSemilla(null);
+      setErrorAcceso(null);
+      return;
+    }
+
+    // Intentamos desencriptar
+    setIsDecrypting(true);
+    setErrorAcceso(null);
+
+    try {
+      const semillaDesencriptada = await obtenerSemilla();
+      if (semillaDesencriptada) {
+        setSemilla(semillaDesencriptada);
+        setSemillaVisible(true);
+      }
+    } catch (error: any) {
+      // Si el orquestador lanza nuestro error o pide clave obligatoria, abrimos el modal
+      if (error.message === 'FALLO_BIOMETRIA' || error.message === 'REQUIERE_CLAVE_MANUAL') {
+        setModalAbierto(true);
+      } else {
+        setErrorAcceso(error.message);
+      }
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
+
+  const procesarClaveManual = async () => {
+    setIsDecrypting(true);
+    setErrorAcceso(null);
+    try {
+      const semillaDesencriptada = await obtenerSemilla(claveManual);
+      if (semillaDesencriptada) {
+        setSemilla(semillaDesencriptada);
+        setSemillaVisible(true);
+        setModalAbierto(false);
+        setClaveManual(""); // Limpiamos el input
+      }
+    } catch (error: any) {
+      setErrorAcceso("Contraseña incorrecta o " + error.message.toLowerCase());
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
 
   const copiarSemilla = () => {
     if (!semilla) return;
@@ -217,15 +292,8 @@ export const Configuracion = () => {
           {t.descExportar}
         </Typography>
 
-        {!semilla ? (
-          <Alert 
-            severity="info"
-            sx={{
-              width: '100%',
-              borderRadius: '12px',
-              mt: 2,
-            }}
-          >
+        {!existeRespaldo ? (
+          <Alert severity="info" sx={{ width: '100%', borderRadius: '12px', mt: 2 }}>
             {t.sinSemilla}
           </Alert>
         ) : (
@@ -247,11 +315,18 @@ export const Configuracion = () => {
               {t.advertencia}
             </Alert>
 
+            {errorAcceso && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>
+                {errorAcceso}
+              </Alert>
+            )}
+
             <Button
               variant="outlined"
               color="primary"
-              startIcon={semillaVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-              onClick={() => setSemillaVisible((v) => !v)}
+              disabled={isDecrypting}
+              startIcon={isDecrypting ? <CircularProgress size={16} color="inherit" /> : (semillaVisible ? <EyeOff size={16} /> : <Eye size={16} />)}
+              onClick={manejarMostrarSemilla}
               sx={{ 
                 mb: semillaVisible ? 3 : 0,
                 py: 1.2,
@@ -263,7 +338,7 @@ export const Configuracion = () => {
               {semillaVisible ? t.ocultar : t.mostrar}
             </Button>
 
-            {semillaVisible && (
+            {semillaVisible && semilla && (
               <Box>
                 <Box
                   sx={{
@@ -338,6 +413,46 @@ export const Configuracion = () => {
           </>
         )}
       </Paper>
+      <Dialog 
+        open={modalAbierto} 
+        onClose={(e, reason) => {
+          if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+          setModalAbierto(false);
+          setIsDecrypting(false);
+        }}
+      >
+        <DialogTitle>{t.tituloModal}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            {t.descripcionModal}
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label={t.labelClave}
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={claveManual}
+            onChange={(e) => setClaveManual(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => {
+            setModalAbierto(false);
+            setIsDecrypting(false);
+          }} color="secondary">
+            {t.cancelar}
+          </Button>
+          <Button 
+            variant="contained"
+            disabled={claveManual.length < 4 || isDecrypting}
+            onClick={procesarClaveManual}
+          >
+             {isDecrypting ? <CircularProgress size={24} color="inherit" /> : t.desbloquear}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 };

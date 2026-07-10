@@ -5,8 +5,10 @@ type IdiomaSoportado = 'es' | 'en';
 
 export type VistaApp = 
   | 'AUTENTICACION'
+  | 'MENU_BILLETERA'
   | 'GENERAR_SEMILLA'
   | 'VERIFICAR_SEMILLA'
+  | 'IMPORTAR_SEMILLA'
   | 'DASHBOARD'
   | 'CONFIGURACION'
   | 'RECIBIR_CRYPTO'

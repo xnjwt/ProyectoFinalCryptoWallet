@@ -41,11 +41,15 @@ export const verificarExistenciaUsername = async (username: string): Promise<boo
  * @param username Nombre de usuario elegido.
  */
 export const vincularBilleteraBackend = async (uid: string, correo: string, username: string): Promise<void> => {
-  await fetch(`${API_BASE_URL}/link-wallet`, {
+  const respuesta = await fetch(`${API_BASE_URL}/link-wallet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uid, correo, username }),
   });
+
+  if (!respuesta.ok) {
+    throw new Error("ERROR_VINCULACION_BACKEND");
+  }
 };
 
 /**
@@ -85,11 +89,18 @@ export const registrarNuevoUsuario = async (correo: string, contrasena: string, 
     throw new Error("USERNAME_TAKEN");
   }
 
-  // Crea el usuario en la base de datos de autenticación de Firebase
+ // Crea el usuario en la base de datos de autenticación de Firebase
   const credenciales = await createUserWithEmailAndPassword(auth, correo, contrasena);
 
   // Sincroniza el UID generado por Firebase con el backend de la aplicación
-  await vincularBilleteraBackend(credenciales.user.uid, correo, username);
+  try {
+    await vincularBilleteraBackend(credenciales.user.uid, correo, username);
+  } catch (errorVinculacion) {
+    // Compensación: si el backend falla, eliminamos el usuario de Firebase
+    // para no dejar una cuenta huérfana sin datos en el backend
+    await credenciales.user.delete();
+    throw new Error("ERROR_VINCULACION_BACKEND");
+  }
 
   return credenciales;
 };
