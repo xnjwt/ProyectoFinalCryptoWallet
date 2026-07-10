@@ -12,6 +12,7 @@ const textos = {
     espera: "ESPERA",
     siguiente: "SIGUIENTE",
     sinSemilla: "No se encontró ninguna wallet configurada en este dispositivo.",
+    volver: "VOLVER AL MENÚ",
   },
   en: {
     tituloExportar: "Your Seed Phrase",
@@ -19,6 +20,7 @@ const textos = {
     espera: "WAIT",
     siguiente: "NEXT",
     sinSemilla: "No wallet configured on this device.",
+    volver: "BACK TO MENU",
   },
 };
 
@@ -152,26 +154,55 @@ export const GenerarFraseSemilla = () => {
           ))}
         </Box>
 
-        <Button
-          variant="contained"
-          fullWidth
-          size="large"
-          disabled={secondsLeft > 0 || !seed}
-          onClick={manejarSiguiente}
+        <Box
           sx={{
-            py: 1.8,
-            borderRadius: '12px',
-            fontWeight: 700,
-            fontSize: '1.1rem',
-            letterSpacing: '1px',
-            boxShadow: (theme) =>
-              theme.palette.mode === 'dark' 
-                ? `0 0 25px ${alpha(theme.palette.primary.main, 0.35)}` 
-                : 'none',
+            display: "flex",
+            gap: 2,
+            mt: 4,
+            flexDirection: { xs: "column", sm: "row" },
           }}
         >
-          {secondsLeft > 0 ? `${t.espera} ${secondsLeft}s...` : t.siguiente}
-        </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => cambiarVista('MENU_BILLETERA')}
+            sx={{
+              py: 1.5,
+              borderRadius: "12px",
+              fontWeight: 700,
+              fontSize: "1rem",
+              letterSpacing: "0.5px",
+              color: "secondary.main",
+              borderColor: (theme) => alpha(theme.palette.secondary.main, 0.5),
+              "&:hover": {
+                borderColor: "secondary.main",
+                backgroundColor: (theme) => alpha(theme.palette.secondary.main, 0.05),
+              },
+            }}
+          >
+            {t.volver}
+          </Button>
+
+          <Button
+            variant="contained"
+            fullWidth
+            disabled={secondsLeft > 0 || !seed}
+            onClick={manejarSiguiente}
+            sx={{
+              py: 1.5,
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '1rem',
+              letterSpacing: '0.5px',
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark' && secondsLeft <= 0 && seed
+                  ? `0 0 20px ${alpha(theme.palette.primary.main, 0.35)}` 
+                  : 'none',
+            }}
+          >
+            {secondsLeft > 0 ? `${t.espera} ${secondsLeft}s...` : t.siguiente}
+          </Button>
+        </Box>
       </Paper>
     </Box>
   );

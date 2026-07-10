@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Bell, User, Copy, ChevronDown, Menu, LogOut } from 'lucide-react';
 import { useConfigStore } from '../../store/configStore';
-import { deriveAddress } from '../../services/cryptoService';
-import { getSeedFromStorage } from '../../services/walletService';
+
+import { obtenerClavesPublicas } from '../../services/walletService';
 
 const textos = {
   es: { usuario: 'Usuario', cerrarSesion: 'Cerrar sesión' },
@@ -22,8 +22,8 @@ export const Header = ({ onMenuClick, onLogout }: HeaderProps) => {
   const modo = useConfigStore((state) => state.modo);
   const t = textos[idioma] || textos.es;
   const isDark = modo === 'dark';
-  const mnemonic = getSeedFromStorage() || '';
-const solanaAddress = mnemonic ? deriveAddress(mnemonic, 'Solana') : '';
+
+const solanaAddress = obtenerClavesPublicas('solana') || "";
   return (
     <header className={`flex justify-between items-center mb-8 ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
       <div className="flex items-center gap-3">

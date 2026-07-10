@@ -1,11 +1,14 @@
 import { create } from 'zustand';
 import {
-  generateSeedPhrase,
-  saveSeedToStorage,
-  getSeedFromStorage,
   shuffleArray,
-  validateSeedOrder,
-  clearSeedFromStorage
+  clearSeedFromStorage,
+  generarFraseSemilla,
+  guardarClavesPublicas,
+  derivarSemilla,
+  guardarSemilla,
+  validarOrdenSemilla,
+  existeSemillaGuardada,
+  importarBilletera
 } from '../services/walletService';
 
 interface WalletState {
@@ -15,6 +18,9 @@ interface WalletState {
   validationResult: boolean | null;
   secondsLeft: number;
   isWalletConfigured: boolean; 
+  isVerifying: boolean;
+  isImporting: boolean;
+  importarWalletDesdeFrase: (seedPhrase: string, onSuccess: () => void, password?: string) => Promise<void>;
 
   initializeWallet: () => void;
   setSeed: (seed: string) => void;
@@ -22,7 +28,7 @@ interface WalletState {
   selectWord: (word: string) => void;
   deselectWord: (word: string) => void;
   resetVerification: () => void;
-  verifySeed: (onSuccess: () => void) => void;
+  verifySeed: (onSuccess: () => void, password?: string) => Promise<void>;
   resetWallet: () => void;
   completeWalletSetup: () => void;
   checkWalletStatus: (uid: string) => Promise<void>;
@@ -35,14 +41,36 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   validationResult: null,
   secondsLeft: 5,
   isWalletConfigured: false,
+  isVerifying: false,
+  isImporting: false,
+
+  importarWalletDesdeFrase: async (seedPhrase, onSuccess, password) => {
+    if (get().isImporting) return;
+    set({ isImporting: true });
+
+    try {
+      await importarBilletera(seedPhrase, password);
+      set({ isWalletConfigured: true, seed: '' }); // Mantenemos la memoria RAM limpia
+      if (onSuccess) onSuccess();
+    } catch (error: any) {
+      set({ isWalletConfigured: false });
+      throw error; // Relanza 'FALLO_BIOMETRIA' o 'BIP39_INVALIDO' hacia la UI
+    } finally {
+      set({ isImporting: false });
+    }
+  },
 
   initializeWallet: () => {
-    const existingSeed = getSeedFromStorage();
-    if (existingSeed) {
-      set({ seed: existingSeed, isWalletConfigured: true });
+    const yaConfigurada = existeSemillaGuardada();
+
+    if (yaConfigurada) {
+      // Si ya hay billetera, solo cambiamos la bandera para que la UI sepa qué pantalla mostrar.
+      // NUNCA guardamos la semilla desencriptada en el estado. Se mantiene vacía.
+      set({ isWalletConfigured: true, seed: '' });
     } else {
-      const newSeed = generateSeedPhrase();
-      set({ seed: newSeed, isWalletConfigured: false });
+      // Solo si es una instalación nueva, generamos la frase para la pantalla de registro
+      const nuevaSemilla = generarFraseSemilla();
+      set({ seed: nuevaSemilla, isWalletConfigured: false });
     }
   },
 
@@ -77,27 +105,36 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     });
   },
 
-  verifySeed: (onSuccess) => {
+  verifySeed: async (onSuccess, password) => {
+    if (get().isVerifying) return; 
     const { seed, selectedWords } = get();
-    const isValid = validateSeedOrder(seed, selectedWords);
+    const esValido = validarOrdenSemilla(seed, selectedWords);
     
-    set({ validationResult: isValid });
+    if (!esValido) {
+      set({ validationResult: false });
+      return;
+    }
+    set({ isVerifying: true });
 
-    if (isValid) {
-      try {
-        saveSeedToStorage(seed); 
-      } catch (error) {
-        console.error("No se pudo guardar la semilla localmente:", error);
-      }
+    try {
+
+      await guardarSemilla(seed, password); 
+      const direccionesPublicas = derivarSemilla(seed);
+      guardarClavesPublicas(direccionesPublicas);
       
-      set({ isWalletConfigured: true }); 
+      set({ validationResult: true, isWalletConfigured: true }); 
       if (onSuccess) onSuccess();
+    } catch (error) {
+      set({ validationResult: false, isWalletConfigured: false });
+      throw error; // Lanzamos el error a la vista ('FALLO_BIOMETRIA')
+    } finally {
+      set({ isVerifying: false }); 
     }
   },
 
   resetWallet: () => {
     clearSeedFromStorage();
-    const newSeed = generateSeedPhrase();
+    const newSeed = generarFraseSemilla();
 
     set({
       seed: newSeed,
@@ -114,18 +151,14 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   checkWalletStatus: async (uid: string) => {
-    try {
-      const existingSeed = getSeedFromStorage();
+    // Usamos la comprobación silenciosa en lugar de obtenerSemilla
+    const yaConfigurada = existeSemillaGuardada();
 
-      if (existingSeed) {
-        set({ seed: existingSeed, isWalletConfigured: true });
-      } else {
-        const newSeed = generateSeedPhrase();
-        set({ seed: newSeed, isWalletConfigured: false });
-      }
-    } catch (error) {
-      console.error("Error al verificar estado de la wallet:", error);
-      set({ isWalletConfigured: false });
+    if (yaConfigurada) {
+      set({ isWalletConfigured: true, seed: '' });
+    } else {
+      const nuevaSemilla = generarFraseSemilla();
+      set({ seed: nuevaSemilla, isWalletConfigured: false });
     }
-  }
+  },
 }));
