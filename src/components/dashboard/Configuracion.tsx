@@ -111,7 +111,7 @@ export const Configuracion = () => {
     <Stack spacing={3} sx={{ width: '100%', maxWidth: '720px', margin: '0 auto', p: { xs: 1, sm: 3 } }}>
       
       <Paper sx={{ p: 3 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 0.5 }}>
           <Languages size={18} />
           <Typography variant="h6" fontWeight="bold">
             {t.tituloIdioma}
@@ -133,7 +133,7 @@ export const Configuracion = () => {
       </Paper>
 
       <Paper sx={{ p: 3 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 0.5 }}>
           {modo === "dark" ? <Moon size={18} /> : <Sun size={18} />}
           <Typography variant="h6" fontWeight="bold">
             {t.tituloTema}

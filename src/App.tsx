@@ -76,7 +76,8 @@ function App() {
       {vistaActual === 'VERIFICAR_SEMILLA' && <VerificarFrase />}
       {(vistaActual === 'DASHBOARD' ||
         vistaActual === 'CONFIGURACION' ||
-        vistaActual === 'RECIBIR_CRYPTO') && (
+        vistaActual === 'RECIBIR_CRYPTO' ||
+        vistaActual === 'ENVIAR_CRYPTO') && (
         <WalletDashboard onLogout={manejarCerrarSesion} />
       )}
     </Box>

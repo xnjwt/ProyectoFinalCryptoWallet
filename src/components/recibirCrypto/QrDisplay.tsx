@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, IconButton, Typography, Tooltip } from '@mui/material';
+import { Box, IconButton, Typography, Tooltip, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { QRCodeSVG } from 'qrcode.react';
 import { useReceiveStore } from '../../store/receiveStore';
@@ -27,6 +27,7 @@ interface QrDisplayProps {
 export const QrDisplay = ({ publicAddress }: QrDisplayProps) => {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
+  const theme = useTheme();
 
   const selectedNetwork = useReceiveStore((state) => state.selectedNetwork);
   const smartQrActive = useReceiveStore((state) => state.smartQrActive);
@@ -51,49 +52,83 @@ export const QrDisplay = ({ publicAddress }: QrDisplayProps) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+      {/* CONTENEDOR DEL CÓDIGO QR */}
       <Box
         sx={{
-          p: 2,
-          backgroundColor: '#fff',
-          borderRadius: '16px',
+          p: 2.5, // Un poco más de margen interno para que respire
+          backgroundColor: '#ffffff', // Siempre blanco para asegurar legibilidad del escáner
+          borderRadius: '24px', // Esquinas súper redondeadas
           display: 'inline-flex',
-          boxShadow: (theme) => `0 0 25px ${alpha(theme.palette.primary.main, 0.25)}`
+          // Resplandor dinámico: más intenso en modo oscuro, más suave como sombra en modo claro
+          boxShadow: theme.palette.mode === 'dark' 
+            ? `0 0 45px ${alpha(theme.palette.primary.main, 0.25)}` 
+            : `0 15px 35px ${alpha(theme.palette.primary.main, 0.15)}`,
+          border: theme.palette.mode === 'dark' ? 'none' : '1px solid rgba(0,0,0,0.05)',
         }}
       >
-        <QRCodeSVG value={qrValue} size={180} level="M" />
+        <QRCodeSVG value={qrValue} size={200} level="M" />
       </Box>
 
+      {/* CAJA DE DATOS DEL QR */}
       <Box 
         sx={{ 
           width: '100%', 
-          p: 2, 
-          backgroundColor: (theme) => alpha(theme.palette.background.default, 0.6), 
-          borderRadius: '12px', 
-          border: '1px solid',
-          borderColor: (theme) => theme.palette.divider,
+          p: 2.5, 
+          // Fondo cristal moderno
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+          borderRadius: '16px', 
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 1
+          gap: 1.5
         }}
       >
+        {/* Título de la caja */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <QrCode size={14} style={{ opacity: 0.8 }} />
-          <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <QrCode size={16} color={theme.palette.mode === 'dark' ? '#9ca3af' : '#4b5563'} />
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontWeight: 550, 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.1em',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827'
+            }}
+          >
             {t.datosQr}
           </Typography>
         </Box>
         
+        {/* Dirección y Botón Copiar */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.95rem', color: 'text.primary', letterSpacing: '0.5px' }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '1rem', 
+              color: theme.palette.mode === 'dark' ? '#e5e7eb' : '#374151', 
+              letterSpacing: '0.5px' 
+            }}
+          >
             {formatUri(qrValue)}
           </Typography>
-          <Tooltip title={copied ? t.copiado : t.copiar}>
-            <IconButton onClick={handleCopy} size="small" color="primary">
+          <Tooltip title={copied ? t.copiado : t.copiar} placement="top">
+            <IconButton 
+              onClick={handleCopy} 
+              sx={{ 
+                color: 'primary.main',
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                }
+              }}
+            >
               <Copy size={18} />
             </IconButton>
           </Tooltip>
         </Box>
       </Box>
+
     </Box>
   );
 };

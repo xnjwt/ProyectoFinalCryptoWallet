@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { AssetTabs } from './AssetTabs';
 import RecibirCripto from '../recibirCrypto/RecibirCripto';
+import { EnviarCrypto } from '../EnviarCrypto/EnviarCrypto';
 import { Configuracion } from './Configuracion';
 import { useConfigStore } from '../../store/configStore';
 import { RecentActivity } from './RecentActivity';
@@ -28,7 +29,8 @@ export const WalletDashboard = ({ onLogout }: WalletDashboardProps) => {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
 
-  const isPanelOpen = vistaActual === 'CONFIGURACION' || vistaActual === 'RECIBIR_CRYPTO';
+  const isPanelOpen = vistaActual === 'CONFIGURACION' || vistaActual === 'RECIBIR_CRYPTO' || vistaActual === 'ENVIAR_CRYPTO';
+
   const totalUsd = usePortfolioStore((state) => state.totalUsd);
   const actualizarPortafolio = usePortfolioStore((state) => state.actualizarPortafolio);
 
@@ -66,6 +68,7 @@ useEffect(() => {
               <Button
                 variant="contained"
                 color="primary"
+                onClick={() => cambiarVista('ENVIAR_CRYPTO')}
                 sx={{ flex: { xs: 1, sm: 'none' }, px: 4, py: 1.2, borderRadius: 3, fontWeight: 'bold', textTransform: 'none' }}
               >
                 {t.enviar}
@@ -113,6 +116,7 @@ useEffect(() => {
 
           {vistaActual === 'RECIBIR_CRYPTO' && <RecibirCripto />}
           {vistaActual === 'CONFIGURACION' && <Configuracion />}
+          {vistaActual === 'ENVIAR_CRYPTO' && <EnviarCrypto />}
         </Box>
       </Box>
     </Box>

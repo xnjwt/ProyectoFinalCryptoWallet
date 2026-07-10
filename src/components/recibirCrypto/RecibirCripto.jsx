@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Divider } from '@mui/material';
+import { Box, Paper, Typography, Divider, useTheme } from '@mui/material';
 import { NetworkSelector } from './NetworkSelector';
 import { ReceiveForm } from './ReceiveForm';
 import { QrDisplay } from './QrDisplay';
@@ -19,42 +19,68 @@ const textos = {
 export default function RecibirCrypto() {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
+  const theme = useTheme(); // Obtenemos el tema dinámico
 
   const testMnemonic = getSeedFromStorage() || "";
   const selectedNetwork = useReceiveStore((state) => state.selectedNetwork);
   const publicAddress = deriveAddress(testMnemonic, selectedNetwork);
 
   return (
+    // 1. Contenedor principal: Centra la tarjeta perfectamente en el panel
     <Box
       sx={{
         width: "100%",
-        maxWidth: "720px",
-        margin: "0 auto",
-        p: { xs: 1, sm: 3 }
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        p: { xs: 2, sm: 4 }
       }}
     >
+      {/* 2. Tarjeta principal: Mismos estilos "Glassmorphism" que EnviarCrypto */}
       <Paper 
         sx={{ 
-          p: { xs: 3, sm: 4 }, 
-          boxShadow: 3 
+          width: "100%",
+          maxWidth: "500px", // Unificamos el ancho con la tarjeta de envíos
+          p: { xs: 4, sm: 5 }, 
+          
+          // Sombras y bordes modernos
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)' 
+            : '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
+          borderRadius: '40px',
+          
+          // Colores dinámicos
+          bgcolor: 'background.paper', 
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : 'none',
+          
+          // Layout interno flexible
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3 
         }}
       >
         <Typography 
           variant="h5" 
-          color="primary.main" 
           align="center" 
-          fontWeight={700} 
-          sx={{ mb: 4 }}
+          fontWeight={800} 
+          sx={{ 
+            mb: 2,
+            color: 'text.primary',
+            letterSpacing: '-0.02em'
+          }}
         >
           {t.titulo}
         </Typography>
 
         <NetworkSelector />
+        
         <ReceiveForm />
         
-        <Divider sx={{ my: 4 }} />
+        {/* Eliminamos el <Divider /> y en su lugar usamos un Box con margen superior para separar el QR */}
+        <Box sx={{ mt: 2 }}>
+          <QrDisplay publicAddress={publicAddress} />
+        </Box>
         
-        <QrDisplay publicAddress={publicAddress} />
       </Paper>
     </Box>
   );
