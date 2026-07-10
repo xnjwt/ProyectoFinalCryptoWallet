@@ -144,11 +144,16 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
         case "USERNAME_TAKEN":
           setMensajeError(t.errorExiste);
           break;
+        case "ERROR_VINCULACION_BACKEND":
+          setMensajeError(t.errorRegistro);
+          break;
         default:
           if (error.code === "auth/invalid-credential") {
             setMensajeError(t.errorCredenciales);
+          } else if (error instanceof TypeError) {
+            setMensajeError(t.errorRed);
           } else {
-            setMensajeError(error.message || t.errorServidor);
+            setMensajeError(t.errorServidor);
           }
           break;
       }
