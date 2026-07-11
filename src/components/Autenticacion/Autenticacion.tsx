@@ -9,8 +9,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { User } from "firebase/auth";
 import { useConfigStore } from "../../store/configStore";
 import { passwordStrength } from "check-password-strength"; 
-/*import { registrarNuevoUsuario, iniciarSesionConIdentificador } from "../../services/authService";*/
-import { registrarNuevoUsuario } from "../../services/authService";
+import { registrarNuevoUsuario, iniciarSesionConIdentificador } from "../../services/authService";
 import logoApp from "../../assets/logo_lux_wallet.png";
 
 const textos = {
@@ -18,8 +17,8 @@ const textos = {
     appTitulo: "Lux Wallet",
     loginTitulo: "Iniciar Sesión",
     registroTitulo: "Crear Cuenta",
-    labelIdentificador: "CORREO ELECTRÓNICO ",
-    placeholderIdentificador: "tu@correo.com ",
+    labelIdentificador: "CORREO ELECTRÓNICO O USUARIO",
+    placeholderIdentificador: "tu@correo.com o tu_usuario",
     labelCorreo: "CORREO ELECTRÓNICO",
     placeholderCorreo: "tu@correo.com",
     labelUsuario: "NOMBRE DE USUARIO",
@@ -57,8 +56,8 @@ const textos = {
     appTitulo: "Lux Wallet",
     loginTitulo: "Sign In",
     registroTitulo: "Create Account",
-    labelIdentificador: "EMAIL ADDRESS",
-    placeholderIdentificador: "you@email.com ",
+    labelIdentificador: "EMAIL OR USERNAME",
+    placeholderIdentificador: "you@email.com or your_username",
     labelCorreo: "EMAIL ADDRESS",
     placeholderCorreo: "you@email.com",
     labelUsuario: "USERNAME",
@@ -130,7 +129,7 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
 
     try {
       if (esModoLogin) {
-        const credenciales = await iniciarSesionConIdentificador(auth, identificador,contrasena);
+        const credenciales = await iniciarSesionConIdentificador(identificador, contrasena);
         onAuthSuccess(credenciales.user);
       } else {
         const credenciales = await registrarNuevoUsuario(correoRegistro, contrasena, username);
@@ -476,7 +475,7 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
           </Button>
         </Box>
 
-        {/*<Button
+        <Button
           fullWidth
           onClick={alternarModo}
           sx={{
@@ -494,7 +493,7 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
           }}
         >
           {esModoLogin ? t.irARegistro : t.irALogin}
-        </Button>*/}
+        </Button>
       </Paper>
     </Box>
   );
