@@ -1,10 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, History, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Settings, X } from 'lucide-react';
 import { useConfigStore } from '../../store/configStore';
 
 const textos = {
-  es: { panel: 'Panel Principal', historial: 'Historial', config: 'Configuración' },
-  en: { panel: 'Main Panel', historial: 'History', config: 'Settings' },
+  es: { panel: 'Panel Principal', config: 'Configuración' },
+  en: { panel: 'Main Panel', config: 'Settings' },
 };
 
 interface SidebarProps {
@@ -50,7 +50,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         <nav className="flex flex-col gap-4">
           <NavItem icon={<LayoutDashboard size={20} />} label={t.panel} active={vistaActual === 'DASHBOARD'} isDark={isDark}
             onClick={() => { cambiarVista('DASHBOARD'); onClose(); }} />
-          <NavItem icon={<History size={20} />} label={t.historial} active={false} isDark={isDark} onClick={() => {}} />
           <NavItem icon={<Settings size={20} />} label={t.config} active={vistaActual === 'CONFIGURACION'} isDark={isDark}
             onClick={() => { cambiarVista('CONFIGURACION'); onClose(); }} />
         </nav>

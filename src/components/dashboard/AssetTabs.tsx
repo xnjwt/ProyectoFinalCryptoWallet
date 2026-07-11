@@ -2,16 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Paper, Tabs, Tab, Typography, Avatar } from '@mui/material';
 import { useConfigStore } from '../../store/configStore';
 import { usePortfolioStore } from '../../store/portfolioStore';
-
-const getCryptoPrices = async () => {
-  const response = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,usd-coin&vs_currencies=usd&include_market_cap=true&include_24hr_change=true'
-  );
-  if (!response.ok) {
-    throw new Error('Failed to fetch crypto prices');
-  }
-  return response.json();
-};
+import { getCryptoPrices } from '../../services/priceService';
 
 const formatMarketCap = (value: number | undefined) => {
   if (value === undefined || value === null) return 'N/A';

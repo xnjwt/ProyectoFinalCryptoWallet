@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Bell, User, Copy, ChevronDown, Menu, LogOut } from 'lucide-react';
+import { User, Copy, Check, ChevronDown, Menu, LogOut } from 'lucide-react';
 import { useConfigStore } from '../../store/configStore';
-
 import { obtenerClavesPublicas } from '../../services/walletService';
 
 const textos = {
-  es: { usuario: 'Usuario', cerrarSesion: 'Cerrar sesión' },
-  en: { usuario: 'User', cerrarSesion: 'Log out' },
+  es: { usuario: 'Usuario', cerrarSesion: 'Cerrar sesión', copiado: '¡Copiado!' },
+  en: { usuario: 'User', cerrarSesion: 'Log out', copiado: 'Copied!' },
 };
 
 
@@ -18,12 +17,25 @@ interface HeaderProps {
 export const Header = ({ onMenuClick, onLogout }: HeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const idioma = useConfigStore((state) => state.idioma);
   const modo = useConfigStore((state) => state.modo);
   const t = textos[idioma] || textos.es;
   const isDark = modo === 'dark';
 
 const solanaAddress = obtenerClavesPublicas('solana') || "";
+
+  const copiarDireccion = async () => {
+    if (!solanaAddress) return;
+    try {
+      await navigator.clipboard.writeText(solanaAddress);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch (error) {
+      console.error('No se pudo copiar la dirección:', error);
+    }
+  };
+
   return (
     <header className={`flex justify-between items-center mb-8 ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
       <div className="flex items-center gap-3">
@@ -51,17 +63,20 @@ const solanaAddress = obtenerClavesPublicas('solana') || "";
             <div className={`absolute top-12 left-0 w-72 border rounded-2xl p-4 shadow-xl z-50 ${
               isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-300'
             }`}>
-              <NetworkItem name="Solana" address={acortarDireccion(solanaAddress)} isDark={isDark} />
+              <NetworkItem
+                name="Solana"
+                address={acortarDireccion(solanaAddress)}
+                isDark={isDark}
+                onCopy={copiarDireccion}
+                copiado={copiado}
+                textoCopiado={t.copiado}
+              />
             </div>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <button className={isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}>
-          <Bell size={20} />
-        </button>
-
         <div className="relative">
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -97,12 +112,35 @@ const acortarDireccion = (addr: string) => {
   if (!addr || addr.length <= 12) return addr;
   return `${addr.slice(0, 7)}...${addr.slice(-6)}`;
 };
-const NetworkItem = ({ name, address, isDark }: { name: string, address: string, isDark: boolean }) => (
-  <div className={`flex justify-between items-center py-2 px-2 rounded-lg cursor-pointer ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
+const NetworkItem = ({
+  name,
+  address,
+  isDark,
+  onCopy,
+  copiado,
+  textoCopiado,
+}: {
+  name: string;
+  address: string;
+  isDark: boolean;
+  onCopy: () => void;
+  copiado: boolean;
+  textoCopiado: string;
+}) => (
+  <div
+    onClick={onCopy}
+    className={`flex justify-between items-center py-2 px-2 rounded-lg cursor-pointer ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+  >
     <div>
       <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{name}</p>
-      <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{address}</p>
+      <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        {copiado ? textoCopiado : address}
+      </p>
     </div>
-    <Copy size={14} className="text-gray-400" />
+    {copiado ? (
+      <Check size={14} className="text-green-500" />
+    ) : (
+      <Copy size={14} className="text-gray-400" />
+    )}
   </div>
 );
