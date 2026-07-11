@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Box, Typography, Button, Accordion, AccordionSummary, AccordionDetails, IconButton, Dialog, useTheme } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Typography, Button, Accordion, AccordionSummary, AccordionDetails, IconButton, Dialog, useTheme, Alert, CircularProgress, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { ArrowLeft, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { useSendStore } from '../../store/sendStore';
@@ -20,7 +20,12 @@ const textos = {
     exitoTitulo: "¡Pago exitoso!",
     exitoSubtitulo: "Tu transacción ha sido procesada correctamente.",
     numPedido: "Número de operación",
-    btnVolver: "Volver al inicio"
+    btnVolver: "Volver al inicio",
+    tituloModal: "Desbloquear Semilla",
+    descripcionModal: "Tu dispositivo no soporta biometría o requieres tu contraseña manual para firmar la transacción.",
+    labelClave: "Contraseña de Encriptación",
+    cancelar: "Cancelar",
+    desbloquear: "Desbloquear"
   },
   en: {
     resumen: "Transaction Summary",
@@ -36,7 +41,12 @@ const textos = {
     exitoTitulo: "Payment successful!",
     exitoSubtitulo: "Your transaction has been successfully processed.",
     numPedido: "Operation number",
-    btnVolver: "Return to home"
+    btnVolver: "Return to home",
+    tituloModal: "Unlock Seed",
+    descripcionModal: "Your device does not support biometrics or you need your manual password to sign the transaction.",
+    labelClave: "Encryption Password",
+    cancelar: "Cancel",
+    desbloquear: "Unlock"
   }
 };
 
@@ -160,18 +170,45 @@ export const SendSummary = () => {
 
   const cambiarVista = useConfigStore((state) => state.cambiarVista);
 
-  const { redSeleccionada, monto, tokenSeleccionado, direccionDestino, setFaseActual, setMonto, setDireccionDestino} = useSendStore();
+  const { redSeleccionada, monto, tokenSeleccionado, direccionDestino,comisionEstimada,isProcessing, errorEnvio, setFaseActual, setMonto, setDireccionDestino, ejecutarTransferencia} = useSendStore();
 
   const [modalExito, setModalExito] = useState(false);
+  const [hashFinal, setHashFinal] = useState("");
+  const [modalClaveAbierto, setModalClaveAbierto] = useState(false);
+  const [claveManual, setClaveManual] = useState("");
+  const [llaveSlider, setLlaveSlider] = useState(0);
 
-  const comisionRed = 0.00005;
-  const comisionApp = 0.50;
-  const totalConComisionApp = parseFloat(monto) + comisionApp;
+  useEffect(() => {
+    if (errorEnvio === 'REQUIERE_CLAVE_MANUAL' || errorEnvio === 'FALLO_BIOMETRIA') {
+      setModalClaveAbierto(true);
+    }
+  }, [errorEnvio]);
 
-  const procesarConfirmacion = () => {
-    setTimeout(() => {
+  const comisionApp = parseFloat(monto) * 0.01 || 0;
+  const totalConComisionApp = parseFloat(monto) + comisionApp + comisionEstimada;
+
+  const procesarConfirmacion = async () => {
+    const hash = await ejecutarTransferencia(); 
+    if (hash) {
+      setHashFinal(hash);
       setModalExito(true);
-    }, 450);
+    } else {
+      setLlaveSlider(prev => prev + 1);
+    }
+  };
+
+  const procesarClaveManual = async () => {
+    const hash = await ejecutarTransferencia(claveManual);
+    
+    setModalClaveAbierto(false);
+    setClaveManual("");
+
+    if (hash) {
+      setHashFinal(hash);
+      setModalExito(true);
+    } else {
+      setLlaveSlider(prev => prev + 1);
+    }
   };
 
   const manejarVolver = () => {
@@ -279,14 +316,18 @@ export const SendSummary = () => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
             <Typography sx={labelStyle}>{t.comisionTotal}</Typography>
             <Typography sx={valueStyle}>
-              ~ {comisionApp} {tokenSeleccionado}
+              
+              ~ {(comisionApp + comisionEstimada).toFixed(6)} {redSeleccionada === 'Solana' ? 'SOL' : 'NATIVO'}
             </Typography>
           </Box>
         </AccordionSummary>
         <AccordionDetails sx={{ px: 3, pb: 3, pt: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={rowStyle}>
             <Typography sx={{...labelStyle, fontSize: '0.85rem'}}>{t.comisionRed}</Typography>
-            <Typography sx={{...valueStyle, fontSize: '0.85rem'}}>{comisionRed} {redSeleccionada === 'Solana' ? 'SOL' : 'NATIVO'}</Typography>
+            <Typography sx={{...valueStyle, fontSize: '0.85rem'}}>
+              
+              {comisionEstimada} {redSeleccionada === 'Solana' ? 'SOL' : 'NATIVO'}
+            </Typography>
           </Box>
           <Box sx={rowStyle}>
             <Typography sx={{...labelStyle, fontSize: '0.85rem'}}>{t.comisionApp}</Typography>
@@ -302,12 +343,24 @@ export const SendSummary = () => {
             {t.total}
           </Typography>
           <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827' }}>
-            {totalConComisionApp.toFixed(4)} {tokenSeleccionado}
+            {totalConComisionApp.toFixed(6)} {tokenSeleccionado}
           </Typography>
         </Box>
-
+      {errorEnvio && errorEnvio !== 'REQUIERE_CLAVE_MANUAL' && errorEnvio !== 'FALLO_BIOMETRIA' && (
+      <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>
+        {errorEnvio}
+      </Alert>
+      )}
+      
+      {isProcessing && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <CircularProgress size={24} />
+          <Typography sx={{ ml: 2, color: 'text.secondary' }}>Procesando transacción...</Typography>
+        </Box>
+      )}
       <BotonDeslizante 
-          texto={t.desliza} 
+          key={llaveSlider}
+          texto={t.desliza}
           alConfirmar={procesarConfirmacion} 
         />
       </Box>
@@ -368,8 +421,10 @@ export const SendSummary = () => {
           <Typography sx={{ fontSize: '0.9rem', color: theme.palette.mode === 'dark' ? '#9ca3af' : '#4b5563', mb: 0.5 }}>
             {t.numPedido}
           </Typography>
-          <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, color: '#22c55e', letterSpacing: '0.05em' }}>
-            #TX-{Math.floor(10000 + Math.random() * 90000)}
+
+          <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, color: '#22c55e', letterSpacing: '0.05em', wordBreak: 'break-all' }}>
+            
+            #TX-{hashFinal.slice(0, 8)}...{hashFinal.slice(-8)}
           </Typography>
         </Box>
 
@@ -400,6 +455,44 @@ export const SendSummary = () => {
           {t.btnVolver}
         </Button>
       </Box>
+      </Dialog>
+
+      <Dialog 
+        open={modalClaveAbierto} 
+        onClose={(e, reason) => {
+          if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+          setModalClaveAbierto(false);
+          setLlaveSlider(prev => prev + 1);
+        }}
+      >
+        <DialogTitle>{t.tituloModal}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            {t.descripcionModal}
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label={t.labelClave}
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={claveManual}
+            onChange={(e) => setClaveManual(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setModalClaveAbierto(false)} color="secondary">
+            {t.cancelar}
+          </Button>
+          <Button 
+            variant="contained"
+            disabled={claveManual.length < 4 || isProcessing}
+            onClick={procesarClaveManual}
+          >
+             {isProcessing ? <CircularProgress size={24} color="inherit" /> : t.desbloquear}
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

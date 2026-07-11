@@ -1,4 +1,4 @@
-import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createTransferInstruction } from '@solana/spl-token';
 import bs58 from 'bs58';
 import { 
@@ -12,7 +12,8 @@ import {
 } from './interfaces';
 import { hayConexionAInternet } from './utilidades';
 
-const ES_MAINNET = false; 
+
+const ES_MAINNET = false;
 
 const DICCIONARIO_TOKENS_SOL: Record<string, { mainnet: string; devnet: string }> = {
     USDT: {
@@ -21,7 +22,7 @@ const DICCIONARIO_TOKENS_SOL: Record<string, { mainnet: string; devnet: string }
     },
     USDC: {
         mainnet: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        devnet: '4zMMC9srt5Ri5X14YGwaPNcgY61mNnQ6CgH9R9f7rG2C'
+        devnet: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'
     }
 };
 
@@ -61,25 +62,44 @@ async function obtenerCostoRentaAta(connection: Connection): Promise<number> {
     return lamportsRenta / 1000000000; 
 }
 
+// Recuerda importar SystemProgram arriba:
+// import { Connection, PublicKey, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
+
 async function construirPayload(
     solicitud: SolicitudTransferencia, 
     requiereAta: boolean, 
-    mintToken: string, 
+    mintToken: string | null, // Cambiado a null si es SOL
     connection: Connection
 ): Promise<any> {
     const tx = new Transaction();
     const origenPubkey = new PublicKey(solicitud.clavePublicaRemitente);
     const destinoPubkey = new PublicKey(solicitud.clavePublicaDestinatario);
-    const mintPubkey = new PublicKey(mintToken);
 
-    const ataOrigen = await getAssociatedTokenAddress(mintPubkey, origenPubkey);
-    const ataDestino = await getAssociatedTokenAddress(mintPubkey, destinoPubkey);
+    // Dinamismo matemático: 1 SOL * (10^9) = 1,000,000,000 lamports
+    const cantidadEnUnidadesMinimas = Math.floor(solicitud.cantidad * Math.pow(10, solicitud.decimalesMoneda));
+    const esSolNativo = solicitud.simboloMoneda.toUpperCase() === 'SOL';
 
-    if (requiereAta) {
-        tx.add(createAssociatedTokenAccountInstruction(origenPubkey, ataDestino, destinoPubkey, mintPubkey));
+    if (esSolNativo) {
+        // RUTA A: Es SOL puro, transferencia directa a nivel de sistema
+        tx.add(
+            SystemProgram.transfer({
+                fromPubkey: origenPubkey,
+                toPubkey: destinoPubkey,
+                lamports: cantidadEnUnidadesMinimas,
+            })
+        );
+    } else if (mintToken) {
+        // RUTA B: Es un SPL Token (USDC, USDT), requiere interactuar con el contrato
+        const mintPubkey = new PublicKey(mintToken);
+        const ataOrigen = await getAssociatedTokenAddress(mintPubkey, origenPubkey);
+        const ataDestino = await getAssociatedTokenAddress(mintPubkey, destinoPubkey);
+
+        if (requiereAta) {
+            tx.add(createAssociatedTokenAccountInstruction(origenPubkey, ataDestino, destinoPubkey, mintPubkey));
+        }
+
+        tx.add(createTransferInstruction(ataOrigen, ataDestino, origenPubkey, cantidadEnUnidadesMinimas));
     }
-
-    tx.add(createTransferInstruction(ataOrigen, ataDestino, origenPubkey, solicitud.cantidad * 1000000));
     
     const { blockhash } = await connection.getLatestBlockhash();
     tx.recentBlockhash = blockhash;
@@ -87,7 +107,6 @@ async function construirPayload(
 
     return tx;
 }
-
 export class SolService implements IServicioRedCripto {
     private proveedorRpc: Connection;
 
@@ -102,6 +121,30 @@ export class SolService implements IServicioRedCripto {
             return { exito: false, mensajeErrorAmigable: "Esa no parece ser una dirección válida de Solana. Confirma que la hayas copiado completa." };
         }
 
+        const esSolNativo = solicitud.simboloMoneda.toUpperCase().includes('SOL');
+        const comisionRedDeFirma = 0.000005;
+
+        if (esSolNativo) {
+            const saldoSOLInLamports = await this.proveedorRpc.getBalance(new PublicKey(solicitud.clavePublicaRemitente));
+            const saldoSOL = saldoSOLInLamports / 1000000000;
+
+            if (saldoSOL < solicitud.cantidad + comisionRedDeFirma) {
+                return { exito: false, mensajeErrorAmigable: `No tienes suficiente SOL para cubrir el envío y la comisión de red.` };
+            }
+
+            const datosCrudos = await construirPayload(solicitud, false, null, this.proveedorRpc);
+
+            return { 
+                exito: true, 
+                transaccionCruda: {
+                    red: 'SOLANA',
+                    datosCrudos: datosCrudos,
+                    comisionDeRedEstimada: comisionRedDeFirma
+                },
+                comisionEstimada: comisionRedDeFirma
+            };
+        }
+
         const mintToken = obtenerDireccionToken(solicitud.simboloMoneda);
         const saldoToken = await obtenerSaldoToken(solicitud.clavePublicaRemitente, mintToken, this.proveedorRpc);
 
@@ -111,7 +154,7 @@ export class SolService implements IServicioRedCripto {
 
         const saldoSOLInLamports = await this.proveedorRpc.getBalance(new PublicKey(solicitud.clavePublicaRemitente));
         const saldoSOL = saldoSOLInLamports / 1000000000;
-        const comisionRedDeFirma = 0.000005; 
+
 
         if (saldoSOL < comisionRedDeFirma) {
             return { exito: false, mensajeErrorAmigable: "Necesitas tener una pequeña fracción de SOL en tu billetera para pagar el costo de usar la red de Solana." };
@@ -156,7 +199,7 @@ export class SolService implements IServicioRedCripto {
             return { exito: false, mensajeErrorAmigable: "No tienes conexión a internet. La transacción está firmada y segura en tu dispositivo, pero no podemos enviarla aún." };
         }
         try {
-            const txHash = await this.proveedorRpc.sendTransaction(txFirmada.transaccionSerializada);
+            const txHash = await this.proveedorRpc.sendRawTransaction(txFirmada.transaccionSerializada);
             return { exito: true, hashTransaccion: txHash };
         } catch (error: any) {
             const mensajeError = error.message || "";

@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
 import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
+import bs58 from 'bs58';
 
 const bip32 = BIP32Factory(ecc);
 
@@ -81,12 +82,18 @@ export const derivarSemilla = (mnemonic: string): ClavesPublicas => {
     };
 };
 
-export const saveSeedToStorage = (seed: string): void => {
-  localStorage.setItem('wallet_seed', seed);
+export const obtenerClavePrivadaSolana = (mnemonic: string): string => {
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    const pathSolana = "m/44'/501'/0'/0'";
+    
+    const derivedKeySolana = derivePath(pathSolana, seed.toString('hex')).key;
+    const keypair = Keypair.fromSeed(derivedKeySolana);
+    
+    // secretKey en Solana contiene tanto la llave privada como la pública juntas
+    return bs58.encode(keypair.secretKey);
 };
-export const getSeedFromStorage = (): string | null => {
-  return localStorage.getItem('wallet_seed');
-};
+
+
 
 export const guardarSemilla = async (seed: string, password?: string): Promise<boolean> => {
     if (password) {
@@ -112,6 +119,7 @@ export const obtenerSemilla = async (password?: string): Promise<string | null> 
 
     const metadatos = JSON.parse(metadatosString);
 
+    // 1. Bifurcación arquitectónica estricta para clave manual
     if (metadatos.metodo === 'clave') {
         if (!password) {
             throw new Error('REQUIERE_CLAVE_MANUAL');
@@ -119,14 +127,34 @@ export const obtenerSemilla = async (password?: string): Promise<string | null> 
         return await obtenerConClave('wallet_seed', password);
     }
 
-    try {
-        return await obtenerEncriptado('wallet_seed');
-    } catch (error: any) {
-        if (error.name === 'NotAllowedError' || error.message.includes('NotAllowedError')) {
-            throw new Error('FALLO_BIOMETRIA');
+    // 2. Bifurcación arquitectónica estricta para biometría
+    if (metadatos.metodo === 'biometria' || metadatos.idCredencial) {
+        // Bloqueo de seguridad: Si la interfaz manda una clave a una bóveda biométrica
+        if (password) {
+            throw new Error('BOVEDA_ESTRICTAMENTE_BIOMETRICA');
         }
-        throw error;
+
+        try {
+            return await obtenerEncriptado('wallet_seed');
+        } catch (error: any) {
+            const mensajeError = error.message?.toLowerCase() || '';
+            const nombreError = error.name || '';
+
+            // Mantenemos la validación robusta multiplataforma
+            if (
+                nombreError === 'NotAllowedError' || 
+                mensajeError.includes('notallowederror') ||
+                mensajeError.includes('not allowed by the user agent') ||
+                mensajeError.includes('denied permission') ||
+                mensajeError.includes('user verification')
+            ) {
+                throw new Error('FALLO_BIOMETRIA');
+            }
+            throw error;
+        }
     }
+
+    throw new Error('Método de almacenamiento desconocido o corrupto');
 };
 async function guardarConClave(clave: string, valor: string, contrasena: string): Promise<boolean> {
     try {
@@ -190,7 +218,7 @@ async function obtenerConClave(clave: string, contrasena: string): Promise<strin
 
         return new TextDecoder().decode(bufferDesencriptado);
     } catch (error: any) {
-        throw new Error(`No se pudo desencriptar con clave '${clave}': ${error.message}`);
+        throw new Error(`No se pudo desencriptar con  la clave dada`);
     }
 }
 export const clearSeedFromStorage = (): void => {
@@ -305,10 +333,14 @@ async function guardarEncriptado(clave: string, valor: string): Promise<boolean>
             datosCodificados
         );
 
+        const idCredencialBase64 = btoa(Array.from(new Uint8Array(credencial.rawId)).map(b => String.fromCharCode(b)).join(''));
+        const datosBase64 = btoa(Array.from(new Uint8Array(bufferEncriptado)).map(b => String.fromCharCode(b)).join(''));
+        const ivBase64 = btoa(Array.from(vectorInicializacion).map(b => String.fromCharCode(b)).join(''));
+
         const metadatosCifrados: MetadatosCifrados = {
-            idCredencial: btoa(String.fromCharCode(...new Uint8Array(credencial.rawId))),
-            datos: btoa(String.fromCharCode(...new Uint8Array(bufferEncriptado))),
-            iv: btoa(String.fromCharCode(...vectorInicializacion))
+            idCredencial: idCredencialBase64,
+            datos: datosBase64,
+            iv: ivBase64
         };
 
         localStorage.setItem(`_seguro_${clave}`, JSON.stringify(metadatosCifrados));
@@ -350,7 +382,7 @@ async function obtenerEncriptado(clave: string): Promise<string | null> {
         const opcionesAutenticacion: CredentialRequestOptions = {
             publicKey: {
                 challenge: crypto.getRandomValues(new Uint8Array(16)),
-                allowCredentials: [{ id: idCredencial, type: "public-key" }],
+                allowCredentials: [{ id: idCredencial.buffer, type: "public-key" }],
                 userVerification: "required",
                 extensions: {
                     prf: {

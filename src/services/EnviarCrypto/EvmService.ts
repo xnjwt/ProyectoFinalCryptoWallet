@@ -8,11 +8,10 @@ import {
     TransaccionFirmada, 
     ResultadoTransmision,
 } from './interfaces';
-
 import { hayConexionAInternet } from './utilidades';
 
-const ES_MAINNET = false; // Ajustar según tu entorno o variable de entorno
 
+const ES_MAINNET = false;
 const DICCIONARIO_TOKENS_EVM: Record<string, { mainnet: string; devnet: string }> = {
     USDT: {
         mainnet: '0xdAC17F958D2ee523a2206206994597C13D831ec7',

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, MenuItem, Button, InputAdornment, IconButton, Dialog, DialogContent, DialogTitle, DialogActions,  Typography, Select, OutlinedInput, useTheme } from '@mui/material';
+import { Box, MenuItem, Button, InputAdornment, IconButton, Dialog, DialogContent, DialogTitle, DialogActions,  Typography, Select, OutlinedInput, useTheme, Alert, CircularProgress } from '@mui/material';
 import { QrCode, Send } from 'lucide-react';
 import { useSendStore } from '../../store/sendStore';
 import { useConfigStore } from '../../store/configStore';
@@ -38,7 +38,7 @@ const tokensPorRed: Record<string, string[]> = {
 export const SendForm = () => {
   const idioma = useConfigStore((state) => state.idioma);
   const t = textos[idioma] || textos.es;
-  const theme = useTheme(); // Hook para obtener el tema actual
+  const theme = useTheme(); 
 
   const [escanerAbierto, setEscanerAbierto] = useState(false);
 
@@ -52,16 +52,21 @@ export const SendForm = () => {
     setToken,
     setDireccionDestino,
     setFaseActual,
-    cargarDatosDesdeQR
+    cargarDatosDesdeQR,
+    isProcessing,   
+    errorEnvio,         
+    prepararTransaccion
   } = useSendStore();
 
-  const manejarEnvio = (e: React.FormEvent) => {
+  const [modalExito, setModalExito] = useState(false);
+  const [hashFinal, setHashFinal] = useState("");
+
+  const manejarEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (monto && direccionDestino) {
-      setFaseActual('SUMMARY');
+       await prepararTransaccion();
     }
   };
-
   const procesarDatosEscaneados = (datosCrudos: string) => {
     setEscanerAbierto(false);
 
@@ -132,7 +137,6 @@ export const SendForm = () => {
           </Select>
         </Box>
 
-        {/* MODIFICADO: Grid para Monto y Moneda. Separado también en Typography y OutlinedInput/Select */}
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ flex: 7 }}>
             <Typography sx={labelStyle}>{t.labelMonto}</Typography>
@@ -200,15 +204,28 @@ export const SendForm = () => {
           />
         </Box>
 
-        {/* MODIFICADO: Botón Continuar */}
+        {errorEnvio && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              borderRadius: '12px',
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.05)',
+              color: theme.palette.mode === 'dark' ? '#ffb4ab' : 'error.main'
+            }}
+          >
+            {errorEnvio}
+          </Alert>
+        )}
+        
         <Box sx={{ mt: 1 }}>
           <Button
             type="submit"
             variant="contained"
             fullWidth
-            // Inclinamos tu icono de Send ligeramente (-45deg) para que se vea como en tu captura
-            endIcon={<Send size={18} style={{ }} />}
-            disabled={!monto || !direccionDestino}
+
+            endIcon={!isProcessing && <Send size={18} style={{ }} />}
+            // Bloqueamos el botón para evitar doble clic mientras carga
+            disabled={!monto || !direccionDestino || isProcessing}
             sx={{
               py: 2,
               borderRadius: '16px',
@@ -241,7 +258,7 @@ export const SendForm = () => {
               }
             }}
           >
-            {t.btnEnviar}
+            {isProcessing ? <CircularProgress size={24} color="inherit" /> : t.btnEnviar}
           </Button>
         </Box>
       </Box>

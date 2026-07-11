@@ -5,8 +5,8 @@ import { EvmService } from './services/EnviarCrypto/EvmService';
 import { SolService } from './services/EnviarCrypto/SolService';
 import { BtcService } from './services/EnviarCrypto/BtcService';
 
-const proveedorEvm = new ethers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/TU_API_KEY");
-const proveedorSolana = new Connection("https://mainnet.helius-rpc.com/?api-key=TU_API_KEY");
+const proveedorEvm = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/xGelSHyeEkaRxElMHLm5Z");
+const proveedorSolana = new Connection("https://devnet.helius-rpc.com/?api-key=3f1aa3ac-1954-46ec-a1e4-41363d948775", "confirmed");
 
 const rpcBitcoinAdapter = {
     sendRawTransaction: async (txHex: string): Promise<string> => {

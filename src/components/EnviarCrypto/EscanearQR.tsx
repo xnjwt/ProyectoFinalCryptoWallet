@@ -22,7 +22,26 @@ export const EscanerQR = ({ alEscanear }: EscanerQRProps) => {
   const t = textos[idioma] || textos.es;
 
   useEffect(() => {
-    const escaner = new Html5QrcodeScanner(
+    let escaner: Html5QrcodeScanner | null = null;
+
+    // Función destructora extrema para matar el hardware
+    const apagarHardware = () => {
+      // 1. Limpiamos la librería (si existe)
+      if (escaner) {
+        escaner.clear().catch(() => {});
+      }
+      
+      // 2. Obligamos al navegador a apagar cualquier cámara activa que haya quedado huérfana
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            stream.getTracks().forEach(track => track.stop());
+          })
+          .catch(() => {}); // Ignoramos si ya estaba apagada
+      }
+    };
+
+    escaner = new Html5QrcodeScanner(
       "lector-qr-billetera",
       { 
         fps: 10, 
@@ -35,16 +54,17 @@ export const EscanerQR = ({ alEscanear }: EscanerQRProps) => {
 
     escaner.render(
       (textoDescifrado) => {
-        escaner.clear();
+        apagarHardware(); // Apaga inmediatamente al leer
         alEscanear(textoDescifrado);
       },
       (error) => {
-        console.warn(error);
+        // Mantenemos esto silencioso
       }
     );
 
+    // Si el usuario cierra el modal presionando "Cancelar" o la tecla ESC
     return () => {
-      escaner.clear().catch(() => {});
+      apagarHardware(); 
     };
   }, [alEscanear]);
 

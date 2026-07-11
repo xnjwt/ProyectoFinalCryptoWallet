@@ -43,8 +43,10 @@ useEffect(() => {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <Box component="main" sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <Box sx={{ p: { xs: 2, md: 4 }, width: '100%' }}>
+      <Box component="main" sx={{ flex: 1, position: 'relative', height: '100vh', overflow: 'hidden' }}>
+        
+        {/* 1. CONTENEDOR DEL DASHBOARD (Hace scroll independiente) */}
+        <Box sx={{ height: '100%', overflowY: 'auto', p: { xs: 2, md: 4 }, width: '100%' }}>
           <Header onMenuClick={() => setIsSidebarOpen(true)} onLogout={onLogout} />
 
           <Box
@@ -93,19 +95,19 @@ useEffect(() => {
           </Box>
         </Box>
 
-        {/* Panel lateral: Configuración o Recibir */}
+        {/* 2. PANEL DESLIZANTE SUPERPUESTO (Confinado dentro del main) */}
         <Box
           sx={{
             position: 'absolute',
             top: 0,
-            right: 0,
+            left: 0,
             height: '100%',
             width: '100%',
             bgcolor: 'background.default',
             zIndex: 20,
             overflowY: 'auto',
             transform: isPanelOpen ? 'translateX(0)' : 'translateX(100%)',
-            transition: 'transform 0.3s ease',
+            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 3, pb: 0 }}>

@@ -14,16 +14,20 @@ const formatMarketCap = (value: number | undefined) => {
 };
 
 const ASSET_LOGOS: Record<string, string> = {
-  BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
-  ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
   SOL: "https://cryptologos.cc/logos/solana-sol-logo.png",
   USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
+  USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
+  BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
+  ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+
 };
 const ASSETS = [
-  { symbol: 'BTC', name: 'Bitcoin', id: 'bitcoin' },
-  { symbol: 'ETH', name: 'Ethereum', id: 'ethereum' },
+  
   { symbol: 'SOL', name: 'Solana', id: 'solana' },
   { symbol: 'USDC', name: 'USD Coin', id: 'usd-coin' },
+  { symbol: 'USDT', name: 'Tether', id: 'tether' },
+  { symbol: 'BTC', name: 'Bitcoin', id: 'bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum', id: 'ethereum' }
 ];
 
 const textos = {

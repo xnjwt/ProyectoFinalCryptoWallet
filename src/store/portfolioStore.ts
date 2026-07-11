@@ -1,6 +1,8 @@
 import { create } from 'zustand';
-import { getSeedFromStorage, obtenerClavesPublicas } from '../services/walletService';
-import { deriveAddress, getSolanaBalance, getUsdcBalance } from '../services/cryptoService';
+
+
+import {obtenerClavesPublicas} from '../services/walletService';
+import {   obtenerSaldo } from '../services/cryptoService';
 import { getCryptoPrices } from '../services/priceService';
 import { useActivityStore } from './ActivityStore';
 
@@ -10,7 +12,7 @@ interface SaldoActivo {
 }
 
 interface PortfolioState {
-  saldos: Record<'BTC' | 'ETH' | 'SOL' | 'USDC', SaldoActivo>;
+  saldos: Record<'BTC' | 'ETH' | 'SOL' | 'USDC' | 'USDT', SaldoActivo>;
   totalUsd: number;
   cargando: boolean;
   inicializado: boolean;
@@ -25,6 +27,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     ETH: { cantidad: 0, valorUsd: 0 },
     SOL: { cantidad: 0, valorUsd: 0 },
     USDC: { cantidad: 0, valorUsd: 0 },
+    USDT: { cantidad: 0, valorUsd: 0 },
   },
   totalUsd: 0,
   cargando: true,
@@ -39,9 +42,10 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         return;
       }
 
-      const [saldoSol, saldoUsdc] = await Promise.all([
-        getSolanaBalance(direccionSolana),
-        getUsdcBalance(direccionSolana),
+      const [saldoSol, saldoUsdc, saldoUsdt] = await Promise.all([
+        obtenerSaldo('SOL'),
+        obtenerSaldo('USDC'),
+        obtenerSaldo('USDT'),
       ]);
 
       let precios: any = null;
@@ -53,9 +57,10 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
 
       const precioSol = precios?.solana?.usd || 0;
       const precioUsdc = precios?.['usd-coin']?.usd || 1;
-
+      const precioUsdt = precios?.['tether']?.usd || 1;
       const valorSolUsd = saldoSol * precioSol;
       const valorUsdcUsd = saldoUsdc * precioUsdc;
+      const valorUsdtUsd = saldoUsdt * precioUsdt;
 
       const { saldos: saldosAnteriores, inicializado } = get();
 
@@ -65,12 +70,15 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         saldoSolNuevo: saldoSol,
         saldoUsdcAnterior: saldosAnteriores.USDC.cantidad,
         saldoUsdcNuevo: saldoUsdc,
+        saldoUsdtAnterior: saldosAnteriores.USDT.cantidad,
+        saldoUsdtNuevo: saldoUsdt,
       });
 
       
       if (inicializado) {
         const deltaSol = saldoSol - saldosAnteriores.SOL.cantidad;
         const deltaUsdc = saldoUsdc - saldosAnteriores.USDC.cantidad;
+        const deltaUsdt = saldoUsdt - saldosAnteriores.USDT.cantidad;
 
         if (deltaSol > UMBRAL_CAMBIO) {
           console.log('[portfolioStore] ✅ delta SOL detectado:', deltaSol);
@@ -88,6 +96,14 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
             cantidad: deltaUsdc,
           });
         }
+        if (deltaUsdt > UMBRAL_CAMBIO) {
+          console.log('[portfolioStore] ✅ delta USDT detectado:', deltaUsdt);
+          useActivityStore.getState().agregarActividad({
+            tipo: 'RECIBIDO',
+            symbol: 'USDT',
+            cantidad: deltaUsdt,
+          });
+        }
       }
 
       set({
@@ -96,6 +112,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
           ETH: { cantidad: 0, valorUsd: 0 },
           SOL: { cantidad: saldoSol, valorUsd: valorSolUsd },
           USDC: { cantidad: saldoUsdc, valorUsd: valorUsdcUsd },
+          USDT: { cantidad: saldoUsdt, valorUsd: valorUsdtUsd },
         },
         totalUsd: valorSolUsd + valorUsdcUsd,
         cargando: false,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef} from "react";
 import {
   Autocomplete,
   Box,
@@ -76,6 +76,8 @@ export const ImportarSemilla = () => {
   const [seedWords, setSeedWords] = useState<string[]>(Array(12).fill(""));
   const [errorValidacion, setErrorValidacion] = useState<string | null>(null);
   
+  const inputRefs = useRef<(HTMLInputElement | null)[]>(Array(12).fill(null));
+
   // Estados Plan B (Modal)
   const [modalAbierto, setModalAbierto] = useState(false);
   const [claveManual, setClaveManual] = useState("");
@@ -216,6 +218,7 @@ export const ImportarSemilla = () => {
               <Typography sx={labelStyle}>{index + 1}. {t.labelPalabra}</Typography>
               <Autocomplete
                 autoHighlight
+                clearOnBlur={false}
                 forcePopupIcon={false}
                 filterOptions={filtroBip39}
                 options={
@@ -225,7 +228,20 @@ export const ImportarSemilla = () => {
                 }
                 inputValue={word}
                 onInputChange={(_, newValue) => handleWordChange(index, newValue)}
-                onChange={(_, newValue) => handleWordChange(index, newValue || "")}
+                onChange={(_, newValue) => {
+                  if (newValue !== null) {
+                    handleWordChange(index, newValue);
+                    
+                    // Si seleccionamos una palabra (con clic o Enter) y no es la última caja...
+                    if (index < 11) {
+                      // Usamos un micro-retraso porque Material-UI es testarudo y trata 
+                      // de retener el foco al cerrar el menú de opciones. Esto le gana la pelea.
+                      setTimeout(() => {
+                        inputRefs.current[index + 1]?.focus();
+                      }, 10);
+                    }
+                  }
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -234,6 +250,7 @@ export const ImportarSemilla = () => {
                     helperText={!isValidWord(word) ? t.errorPalabra : " "}
                     sx={modernTextFieldStyle}
                     // Eliminamos el 'label' nativo para que use nuestro Typography superior
+                    inputRef={(el) => (inputRefs.current[index] = el)}
                   />
                 )}
               />

@@ -33,7 +33,7 @@ import {
   Palette
 } from "lucide-react";
 import { useConfigStore, acentosDisponibles } from "../../store/configStore";
-import { getSeedFromStorage, obtenerSemilla } from "../../services/walletService";
+import {obtenerSemilla } from "../../services/walletService";
 
 const textos = {
   es: {

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type TipoActividad = 'RECIBIDO' | 'ENVIADO';
-export type SimboloActivo = 'BTC' | 'ETH' | 'SOL' | 'USDC';
+export type SimboloActivo = 'BTC' | 'ETH' | 'SOL' | 'USDC'| 'USDT';
 
 export interface Actividad {
   id: string;

@@ -8,6 +8,7 @@ export interface SolicitudTransferencia {
     clavePublicaDestinatario: string;
     simboloMoneda: string;
     cantidad: number;
+    decimalesMoneda: number;
 }
 
 

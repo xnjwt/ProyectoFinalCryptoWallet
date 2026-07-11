@@ -17,7 +17,7 @@ export const useReceiveStore = create<ReceiveState>((set) => ({
   receiveAmount: '',
   selectedToken: 'USDC',
   setNetwork: (network) => {
-    // Cambia el token por defecto según la red seleccionada
+
     const defaultToken = network === 'Solana' ? 'USDC' : network === 'Ethereum' ? 'USDT' : 'BTC';
     set({ selectedNetwork: network, selectedToken: defaultToken });
   },

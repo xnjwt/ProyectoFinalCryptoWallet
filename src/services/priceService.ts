@@ -18,7 +18,7 @@ export const getCryptoPrices = async () => {
   peticionEnCurso = (async () => {
     try {
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,usd-coin&vs_currencies=usd&include_market_cap=true&include_24hr_change=true'
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,usd-coin,tether&vs_currencies=usd&include_market_cap=true&include_24hr_change=true'
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch crypto prices (${response.status})`);

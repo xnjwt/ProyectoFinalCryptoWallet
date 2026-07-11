@@ -56,7 +56,7 @@ export const EnviarCrypto = () => {
           fontWeight={800} 
           sx={{ 
             mb: 5,
-            color: 'text.primary', // Usamos el color de texto del tema
+            color: 'text.primary', 
             letterSpacing: '-0.02em'
           }}
         >

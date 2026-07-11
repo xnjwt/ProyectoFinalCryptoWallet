@@ -2,8 +2,8 @@ import { Box, Paper, Typography, Divider, useTheme } from '@mui/material';
 import { NetworkSelector } from './NetworkSelector';
 import { ReceiveForm } from './ReceiveForm';
 import { QrDisplay } from './QrDisplay';
-import { deriveAddress } from '../../services/cryptoService';
-import { getSeedFromStorage } from '../../services/walletService';
+
+import {  obtenerClavesPublicas } from '../../services/walletService';
 import { useReceiveStore } from '../../store/receiveStore';
 import { useConfigStore } from '../../store/configStore';
 
@@ -21,10 +21,9 @@ export default function RecibirCrypto() {
   const t = textos[idioma] || textos.es;
   const theme = useTheme(); // Obtenemos el tema dinámico
 
-  const testMnemonic = getSeedFromStorage() || "";
+  
   const selectedNetwork = useReceiveStore((state) => state.selectedNetwork);
-  const publicAddress = deriveAddress(testMnemonic, selectedNetwork);
-
+  const publicAddress = obtenerClavesPublicas(selectedNetwork as any) as string;
   return (
     // 1. Contenedor principal: Centra la tarjeta perfectamente en el panel
     <Box

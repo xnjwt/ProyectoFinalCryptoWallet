@@ -13,9 +13,10 @@ import {
 
 import { hayConexionAInternet } from './utilidades';
 
+
 const ECPair = ECPairFactory(ecc);
 
-const ES_MAINNET = false; 
+const ES_MAINNET = false;
 const RED_BITCOIN = ES_MAINNET ? bitcoin.networks.bitcoin : bitcoin.networks.testnet;
 const LIMITE_POLVO_BTC = 546;
 
