@@ -39,7 +39,7 @@ const textos = {
     volver: "VOLVER AL MENÚ",
     importar: "IMPORTAR WALLET",
     tituloModal: "Seguridad Alternativa",
-    descripcionModal: "Tu dispositivo no soporta biometría o la acción fue cancelada. Crea una contraseña segura para encriptar tu billetera importada.",
+    descripcionModal: "Tu dispositivo no soporta biometría PRF o la acción fue cancelada. Crea una contraseña segura para encriptar tu billetera importada.",
     labelClave: "Contraseña de Encriptación",
     cancelar: "Cancelar",
     proteger: "Proteger Billetera"
@@ -54,7 +54,7 @@ const textos = {
     volver: "BACK TO MENU",
     importar: "IMPORT WALLET",
     tituloModal: "Alternative Security",
-    descripcionModal: "Your device does not support biometrics or the action was canceled. Create a secure password to encrypt your imported wallet.",
+    descripcionModal: "Your device does not support PRF biometrics or the action was canceled. Create a secure password to encrypt your imported wallet.",
     labelClave: "Encryption Password",
     cancelar: "Cancel",
     proteger: "Protect Wallet"

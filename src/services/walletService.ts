@@ -103,7 +103,16 @@ export const guardarSemilla = async (seed: string, password?: string): Promise<b
     try {
         return await guardarEncriptado('wallet_seed', seed);
     } catch (error: any) {
-        if (error.name === 'NotAllowedError' || error.message.includes('NotAllowedError')) {
+        const nombre = error.name || '';
+        const mensaje = error.message?.toLowerCase() || '';
+        if (
+            nombre === 'NotAllowedError' || 
+            mensaje.includes('notallowederror') ||
+            nombre === 'NotSupportedError' ||
+            mensaje.includes('notsupported') ||
+            mensaje.includes('prf') ||
+            mensaje.includes('not supported')
+        ) {
             throw new Error('FALLO_BIOMETRIA');
         }
         throw error;
