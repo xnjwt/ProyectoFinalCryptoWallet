@@ -45,11 +45,10 @@ export const QrDisplay = ({ publicAddress }: QrDisplayProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const formatUri = (uri: string) => {
-    if (uri.length <= 30) return uri;
-    return `${uri.slice(0, 15)}••••${uri.slice(-12)}`;
-  };
-
+  const formatUri = (addr: string) => {
+  if (!addr || addr.length <= 12) return addr;
+  return `${addr.slice(0, 7)}...${addr.slice(-6)}`;
+};
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
       {/* CONTENEDOR DEL CÓDIGO QR */}
