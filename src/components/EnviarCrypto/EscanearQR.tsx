@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Box, Typography } from '@mui/material';
 import { useConfigStore } from '../../store/configStore';
 import { alpha } from '@mui/material/styles';
@@ -22,47 +22,42 @@ export const EscanerQR = ({ alEscanear }: EscanerQRProps) => {
   const t = textos[idioma] || textos.es;
 
   useEffect(() => {
-    let escaner: Html5QrcodeScanner | null = null;
+    const escaner = new Html5Qrcode("lector-qr-billetera");
 
-    // Función destructora extrema para matar el hardware
     const apagarHardware = () => {
-      // 1. Limpiamos la librería (si existe)
-      if (escaner) {
-        escaner.clear().catch(() => {});
+      if (escaner.isScanning) {
+        escaner.stop().then(() => {
+          escaner.clear();
+        }).catch(() => {});
+      } else {
+        escaner.clear();
       }
       
-      // 2. Obligamos al navegador a apagar cualquier cámara activa que haya quedado huérfana
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
             stream.getTracks().forEach(track => track.stop());
           })
-          .catch(() => {}); // Ignoramos si ya estaba apagada
+          .catch(() => {}); 
       }
     };
 
-    escaner = new Html5QrcodeScanner(
-      "lector-qr-billetera",
+    const onScanSuccess = (textoDescifrado: string) => {
+      apagarHardware(); 
+      alEscanear(textoDescifrado);
+    };
+
+    escaner.start(
+      { facingMode: "environment" },
       { 
         fps: 10, 
         qrbox: { width: 250, height: 250 },
-        aspectRatio: 1,
-        showTorchButtonIfSupported: true
+        aspectRatio: 1
       },
-      false
-    );
+      onScanSuccess,
+      () => {}
+    ).catch(() => {});
 
-    escaner.render(
-      (textoDescifrado) => {
-        apagarHardware(); // Apaga inmediatamente al leer
-        alEscanear(textoDescifrado);
-      },
-      (error) => {
-        // Mantenemos esto silencioso
-      }
-    );
-
-    // Si el usuario cierra el modal presionando "Cancelar" o la tecla ESC
     return () => {
       apagarHardware(); 
     };
@@ -81,26 +76,7 @@ export const EscanerQR = ({ alEscanear }: EscanerQRProps) => {
           overflow: 'hidden',
           borderRadius: '16px',
           border: '2px solid',
-          borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-          '& button': {
-            backgroundColor: 'primary.main',
-            color: '#fff',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            marginTop: '10px'
-          },
-          '& select': {
-            padding: '8px',
-            borderRadius: '8px',
-            marginBottom: '10px',
-            width: '100%'
-          },
-          '& a': {
-            display: 'none'
-          }
+          borderColor: (theme) => alpha(theme.palette.primary.main, 0.3)
         }} 
       />
     </Box>
