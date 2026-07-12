@@ -35,6 +35,8 @@ const textos = {
     errorNoExiste: "El nombre de usuario no existe.",
     errorRed: "No se pudo conectar con el servidor. Verifica tu conexión.",
     errorServidor: "Ocurrió un error inesperado. Intenta más tarde.",
+    errorCorreoExiste: "Este correo electrónico ya está registrado.",
+    errorCorreoInvalido: "El formato del correo electrónico no es válido.",
     contrasenasNoCoinciden: "Las contraseñas no coinciden. Verifícalas.",
     labelConfirmarContrasena: "CONFIRMAR CONTRASEÑA *",
     placeholderConfirmarContrasena: "Repite tu contraseña",
@@ -72,6 +74,8 @@ const textos = {
     errorUsername: "Username is required and cannot contain spaces.",
     errorExiste: "This username is already taken. Choose another one.",
     errorNoExiste: "Username does not exist.",
+    errorCorreoExiste: "This email address is already registered.",
+    errorCorreoInvalido: "The email address format is invalid.",
     errorRed: "Could not connect to the server. Check your connection.",
     errorServidor: "An unexpected error occurred. Try again later.",
     contrasenasNoCoinciden: "Passwords do not match. Please verify them.",
@@ -148,6 +152,15 @@ export const Autenticacion = ({ onAuthSuccess }: FormularioAccesoProps) => {
           break;
         case "ERROR_VINCULACION_BACKEND":
           setMensajeError(t.errorRegistro);
+          break;
+        case "EMAIL_EXISTS":
+          setMensajeError(t.errorCorreoExiste);
+          break;
+        case "WEAK_PASSWORD":
+          setMensajeError(t.contrasenaDebil);
+          break;
+        case "INVALID_EMAIL":
+          setMensajeError(t.errorCorreoInvalido);
           break;
         default:
           if (error.code === "auth/invalid-credential") {
